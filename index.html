@@ -142,6 +142,8 @@ function waitForGIS(){
   });
 }
 async function getDriveToken(){
+,
+  if(driveToken)return driveToken;
   const cid=getClientId();
   if(!cid){alert("First enter your Google OAuth Web Client ID in Settings.");return null}
   try{await waitForGIS()}catch(e){alert(e.message);return null}
@@ -402,7 +404,7 @@ ensureLogin(); if(localStorage.getItem("googleClientId"))clientId.value=localSto
   window.updateGoal=function(id,field,val){const g=data.goals.find(x=>x.id===id);if(!g)return;g[field]=field==='name'||field==='targetDate'?val:Number(val);persist(false);renderGoals();renderDashboardOnly()};
   function renderGoals(){
     const gs=data.goals||[];
-    byId('goalGrid').innerHTML=gs.map(g=>{const pct=g.target?Math.min(100,Math.max(0,g.current/g.target*100)):0;return '<div class="card"><div class="sectionTitle"><h3>'+esc(g.name)+'</h3><button class="danger" onclick="deleteGoal(\''+g.id+'\')">Delete</button></div><div class="value">'+(g.currency==='INR'?fmtINR(g.current):fmtEUR(g.current))+' <span class="muted small">/ '+(g.currency==='INR'?fmtINR(g.target):fmtEUR(g.target))+'</span></div><div class="progress" style="margin:12px 0 8px"><span style="width:'+pct+'%"></span></div><div class="small">'+pct.toFixed(0)+'% complete '+(g.targetDate?'• target '+esc(g.targetDate):'')+'</div><div style="margin-top:10px"><label>Current amount</label><input type="number" step=".01" value="'+g.current+'" onchange="updateGoal(\''+g.id+'\\',\\'current\\',this.value)"></div></div>}).join('');
+    byId('goalGrid').innerHTML=gs.map(g=>{const pct=g.target?(g.type==='debt'?Math.min(100,Math.max(0,(g.target-g.current)/g.target*100)):Math.min(100,Math.max(0,g.current/g.target*100))):0;return '<div class="card"><div class="sectionTitle"><h3>'+esc(g.name)+'</h3><button class="danger" onclick="deleteGoal(\''+g.id+'\')">Delete</button></div><div class="value">'+(g.currency==='INR'?fmtINR(g.current):fmtEUR(g.current))+' <span class="muted small">/ '+(g.currency==='INR'?fmtINR(g.target):fmtEUR(g.target))+'</span></div><div class="progress" style="margin:12px 0 8px"><span style="width:'+pct+'%"></span></div><div class="small">'+pct.toFixed(0)+'% complete '+(g.targetDate?'• target '+esc(g.targetDate):'')+'</div><div style="margin-top:10px"><label>Current amount</label><input type="number" step=".01" value="'+g.current+'" onchange="updateGoal(\''+g.id+'\\',\\'current\\',this.value)"></div></div>}).join('');
     byId('goalHero').innerHTML=gs.length?gs.map(g=>'<span class="pill" style="margin:3px">'+esc(g.name)+' · '+(g.target?Math.min(100,g.current/g.target*100).toFixed(0):0)+'%</span>').join(''):'<span class="muted">Add your first goal.</span>';
   }
 
@@ -453,12 +455,13 @@ ensureLogin(); if(localStorage.getItem("googleClientId"))clientId.value=localSto
     const ar=alerts();byId('dashAlerts').innerHTML=ar.map(x=>'<div class="alertItem '+x.c+'"><b>'+esc(x.t)+'</b><div class="small muted">'+esc(x.d)+'</div></div>').join('')||'<div class="alertItem good"><b>All clear</b><div class="small muted">No active alerts.</div></div>';
     const last=keys.slice(-2);if(last.length>=2){const a=last[0],b=last[1];const ds=currentMonthSpend(b)-currentMonthSpend(a),di=currentMonthIncome(b)-currentMonthIncome(a);byId('whatChanged').innerHTML='<p>Spending changed by <b class="'+(ds>0?'bad':'good')+'">'+(ds>=0?'+':'')+fmtEUR(ds)+'</b> versus '+monthLabel(a)+'.</p><p>Income changed by <b>'+((di>=0?'+':'')+fmtEUR(di))+'</b>.</p><p>Current India commitment is <b>'+fmtEUR(ind)+'</b> in the active month.</p>'}else byId('whatChanged').innerHTML='<p class="muted">Add another month to see month-over-month changes.</p>';
     const mx=Math.max(...use.map(k=>currentMonthSpend(k)),1);byId('dashBars').innerHTML=use.map(k=>'<div class="barcol"><div class="bar" style="height:'+Math.max(4,currentMonthSpend(k)/mx*160)+'px"></div><b>'+fmtEUR(currentMonthSpend(k))+'</b><div class="muted">'+esc(monthLabel(k).split(' ')[0])+'</div></div>').join('');
-    byId('dashGoals').innerHTML=(data.goals||[]).map(g=>{const pct=g.target?Math.min(100,g.current/g.target*100):0;return '<div style="margin:9px 0"><div class="sectionTitle"><b>'+esc(g.name)+'</b><span class="small">'+pct.toFixed(0)+'%</span></div><div class="progress"><span style="width:'+pct+'%"></span></div></div>'}).join('')||'<span class="muted">No goals yet.</span>';
+    byId('dashGoals').innerHTML=(data.goals||[]).map(g=>{const pct=g.target?(g.type==='debt'?Math.min(100,Math.max(0,(g.target-g.current)/g.target*100)):Math.min(100,g.current/g.target*100)):0;return '<div style="margin:9px 0"><div class="sectionTitle"><b>'+esc(g.name)+'</b><span class="small">'+pct.toFixed(0)+'%</span></div><div class="progress"><span style="width:'+pct+'%"></span></div></div>'}).join('')||'<span class="muted">No goals yet.</span>';
     byId('dashMonths').innerHTML='<table><tr><th>Month</th><th>Income</th><th>Actual</th><th>Left</th><th>Status</th></tr>'+keys.map(k=>'<tr><td>'+esc(monthLabel(k))+'</td><td>'+fmtEUR(currentMonthIncome(k))+'</td><td>'+fmtEUR(currentMonthSpend(k))+'</td><td class="'+(currentMonthIncome(k)-currentMonthSpend(k)<0?'bad':'good')+'">'+fmtEUR(currentMonthIncome(k)-currentMonthSpend(k))+'</td><td>'+(data.monthStatus[k]?.closed?'<span class="pill good">Closed</span>':'<span class="pill">Open</span>')+'</td></tr>').join('')+'</table>';
   }
 
   function renderMonthlyEnhanced(){
-    /* Keep the existing monthly editor, but add close/reopen and forecast controls. */
+    /* Rebuild the legacy editor first so the close/forecast header never nests repeatedly. */
+    if(typeof monthly==='function') monthly();
     const box=document.getElementById('monthEditor');if(!box)return;
     const m=data.months[activeMonthOrCurrent()];if(!m)return;
     const k=activeMonthOrCurrent();
