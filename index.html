@@ -118,7 +118,7 @@ let driveToken=null;
 function login(){
   const u=(document.getElementById("loginUser")?.value||"").trim().toLowerCase();
   const p=document.getElementById("loginPass")?.value||"";
-  const ok=(u==="viraj" && p.trim()==="finance2026");
+  const ok=(u==="viraj" && p.trim()==="Viraj0201");
   const err=document.getElementById("loginError");
   if(ok){
     try{sessionStorage.setItem("virajFinanceLoggedIn","1")}catch(e){}
@@ -128,11 +128,12 @@ function login(){
     if(typeof toast==="function")toast("Welcome back");
     return false;
   }
-  if(err){err.textContent="Incorrect username or password. Use username: viraj and password: finance2026";err.style.display="block"}
+  if(err){err.textContent="Incorrect username or password. Use username: viraj and password: Viraj0201";err.style.display="block"}
   return false;
 }
 function logout(){
   sessionStorage.removeItem("virajFinanceLoggedIn");
+  localStorage.removeItem("virajFinanceLoggedIn");
   location.reload();
 }
 function ensureLogin(){
@@ -156,7 +157,6 @@ function waitForGIS(){
   });
 }
 async function getDriveToken(){
-,
   if(driveToken)return driveToken;
   const cid=getClientId();
   if(!cid){alert("First enter your Google OAuth Web Client ID in Settings.");return null}
