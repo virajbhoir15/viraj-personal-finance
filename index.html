@@ -278,6 +278,7 @@ ensureLogin(); if(localStorage.getItem("googleClientId"))clientId.value=localSto
     if(!data.settings.appName)data.settings.appName='Viraj Personal Finance Centre';
   }
   ensureData();
+  try{persist(true)}catch(e){}
 
   /* Add the expanded navigation without changing your existing stored data. */
   const nav=document.querySelector('.nav');
@@ -378,7 +379,7 @@ ensureLogin(); if(localStorage.getItem("googleClientId"))clientId.value=localSto
     document.querySelectorAll('.view').forEach(x=>x.classList.remove('on'));
     const v=document.getElementById(id);if(v)v.classList.add('on');
     document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));if(btn)btn.classList.add('active');
-    const titles={dashboard:'Dashboard',transactions:'Transactions',monthly:'Monthly',accounts:'Accounts',goals:'Goals',loan:'Education Loan',networth:'Net Worth',reports:'Reports',settings:'Settings'};
+    const titles={dashboard:'Dashboard',transactions:'Transactions',monthly:'Monthly',grocery:'Grocery',india:'India',misc:'Misc',accounts:'Accounts',goals:'Goals',loan:'Education Loan',networth:'Net Worth',reports:'Reports',settings:'Settings'};
     document.getElementById('title').textContent=titles[id]||id;
     enhancedRender();
   };
