@@ -116,20 +116,34 @@ const DRIVE_FILE_NAME="Viraj_Finance_Data.json";
 let driveToken=null;
 
 function login(){
-  const u=byId("loginUser").value.trim(), p=byId("loginPass").value;
-  if(u==="viraj" && p==="finance2026"){
-    sessionStorage.setItem("virajFinanceLoggedIn","1");
-    byId("loginGate").style.display="none";
-    toast("Welcome back");
-  }else byId("loginError").style.display="block";
+  const u=(document.getElementById("loginUser")?.value||"").trim().toLowerCase();
+  const p=document.getElementById("loginPass")?.value||"";
+  const ok=(u==="viraj" && p.trim()==="finance2026");
+  const err=document.getElementById("loginError");
+  if(ok){
+    try{sessionStorage.setItem("virajFinanceLoggedIn","1")}catch(e){}
+    try{localStorage.setItem("virajFinanceLoggedIn","1")}catch(e){}
+    const gate=document.getElementById("loginGate");
+    if(gate)gate.style.display="none";
+    if(typeof toast==="function")toast("Welcome back");
+    return false;
+  }
+  if(err){err.textContent="Incorrect username or password. Use username: viraj and password: finance2026";err.style.display="block"}
+  return false;
 }
 function logout(){
   sessionStorage.removeItem("virajFinanceLoggedIn");
   location.reload();
 }
 function ensureLogin(){
-  if(sessionStorage.getItem("virajFinanceLoggedIn")==="1")byId("loginGate").style.display="none";
+  let ok=false;
+  try{ok=sessionStorage.getItem("virajFinanceLoggedIn")==="1" || localStorage.getItem("virajFinanceLoggedIn")==="1"}catch(e){}
+  if(ok){try{sessionStorage.setItem("virajFinanceLoggedIn","1")}catch(e){};const gate=document.getElementById("loginGate");if(gate)gate.style.display="none";}
 }
+document.addEventListener("DOMContentLoaded",function(){
+  const p=document.getElementById("loginPass");
+  if(p)p.addEventListener("keydown",function(e){if(e.key==="Enter"){e.preventDefault();login();}});
+});
 function setDriveStatus(x){const el=byId("driveStatus");if(el)el.textContent=x}
 
 function getClientId(){
