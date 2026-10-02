@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Viraj Personal Finance Centre</title>
-<meta name="theme-color" content="#4f46e5"><link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#4f46e5"><link rel="manifest" href="manifest.json"><script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
 :root{--p:#4f46e5;--p2:#7c3aed;--bg:#f5f7fb;--card:#fff;--ink:#172033;--muted:#667085;--line:#e5e7eb;--good:#16a34a;--bad:#dc2626;--warn:#f59e0b}
 *{box-sizing:border-box}body{margin:0;font:14px system-ui,-apple-system,Segoe UI,Roboto;color:var(--ink);background:var(--bg)}
@@ -15,10 +15,25 @@ table{width:100%;border-collapse:collapse}th,td{padding:10px;border-bottom:1px s
 .barbox{height:220px;display:flex;align-items:end;gap:20px;padding:15px}.barcol{flex:1;text-align:center}.bar{max-width:70px;margin:auto;background:linear-gradient(#7c3aed,#4f46e5);border-radius:9px 9px 3px 3px;min-height:3px}.loanHero{color:#fff;background:linear-gradient(135deg,#172554,#7c3aed)}.loanGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.metric{background:#ffffff18;padding:12px;border-radius:12px}.metric b{display:block;font-size:18px;margin-top:3px}.scroll{max-height:430px;overflow:auto}.row{display:grid;grid-template-columns:55px 100px 1fr 1fr 1fr;gap:8px;padding:9px;border-bottom:1px solid #ffffff18;font-size:12px}.lightrow{color:var(--ink);border-bottom:1px solid var(--line)}.note{padding:11px;border-radius:11px;background:#eff6ff;color:#1e3a8a;font-size:12px}.toast{position:fixed;right:18px;bottom:18px;background:#172554;color:#fff;padding:11px 14px;border-radius:11px;display:none;z-index:20}
 @media(max-width:900px){aside{width:190px}main{margin-left:190px}.kpis{grid-template-columns:repeat(2,1fr)}.two,.three{grid-template-columns:1fr}.loanGrid{grid-template-columns:repeat(2,1fr)}.form{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:650px){body{padding-bottom:70px}aside{top:auto;bottom:0;width:100%;height:68px;padding:5px;background:#111c4a}.logo{display:none}.nav{display:grid;grid-template-columns:repeat(5,1fr);height:100%}.nav button{font-size:10px;text-align:center;padding:7px 2px}.nav button:nth-child(n+6){display:none}main{margin:0;padding:14px}.top{align-items:flex-start;flex-direction:column}.top h1{font-size:22px}.kpis{grid-template-columns:repeat(2,1fr);gap:9px}.value{font-size:20px}.form{grid-template-columns:1fr}.wide{grid-column:auto}.loanGrid{grid-template-columns:repeat(2,1fr)}table{display:block;overflow:auto;white-space:nowrap}}
+.loginGate{position:fixed;inset:0;z-index:100;background:linear-gradient(135deg,#111c4a,#4f46e5 55%,#7c3aed);display:flex;align-items:center;justify-content:center;padding:20px}
+.loginCard{width:min(430px,100%);background:#fff;border-radius:24px;padding:32px;box-shadow:0 25px 70px #0005}.loginBrand{font-size:24px;font-weight:900;color:#172033;margin-bottom:6px}.loginSub{color:#667085;margin-bottom:24px}.loginCard label{display:block;font-size:12px;font-weight:800;color:#667085;margin:12px 0 6px}.loginCard input{font-size:15px}.loginError{color:#b42318;background:#fff1f2;padding:9px;border-radius:9px;margin-top:12px;display:none}.driveBox{margin-top:16px;padding:14px;border-radius:13px;background:#f5f7ff;border:1px solid #dfe3ff}.driveStatus{font-size:13px;margin:8px 0;color:#475467}
 </style></head><body>
+<div id="loginGate" class="loginGate">
+  <div class="loginCard">
+    <div class="loginBrand">💰 Viraj Finance</div>
+    <div class="loginSub">Personal Finance Centre</div>
+    <label>Username</label>
+    <input id="loginUser" autocomplete="username" value="viraj">
+    <label>Password</label>
+    <input id="loginPass" type="password" autocomplete="current-password" placeholder="Enter password">
+    <button class="primary" style="width:100%;margin-top:18px" onclick="login()">Sign in</button>
+    <div id="loginError" class="loginError">Incorrect username or password.</div>
+    <div class="muted" style="font-size:11px;margin-top:14px">This is a browser app lock. It is not a substitute for secure server-side authentication.</div>
+  </div>
+</div>
 <aside><div class="logo">💰 Viraj Finance</div><div class="nav">
 <button class="active" onclick="show('dashboard',this)">📊 Dashboard</button><button onclick="show('monthly',this)">📅 Monthly</button><button onclick="show('grocery',this)">🛒 Grocery</button><button onclick="show('india',this)">🇮🇳 India</button><button onclick="show('misc',this)">🧾 Misc</button><button onclick="show('loan',this)">🏦 Education Loan</button><button onclick="show('settings',this)">⚙️ Settings</button></div></aside>
-<main><div class="top"><div><h1 id="title">Dashboard</h1><p>Personal Finance Centre • data saved in this browser</p></div><div><button onclick="backup()">Backup JSON</button> <button class="primary" onclick="save()">Save</button></div></div>
+<main><div class="top"><div><h1 id="title">Dashboard</h1><p>Personal Finance Centre • data saved in this browser</p></div><div><button onclick="backup()">Backup JSON</button> <button class="primary" onclick="save()">Save</button> <button onclick="logout()">Logout</button></div></div>
 
 <section id="dashboard" class="view on"><div class="grid kpis">
 <div class="card"><div class="eyebrow">3-month income</div><div class="value" id="ki">€0</div></div><div class="card"><div class="eyebrow">3-month spending</div><div class="value" id="ks">€0</div></div><div class="card"><div class="eyebrow">Net cash flow</div><div class="value" id="kn">€0</div></div><div class="card"><div class="eyebrow">September</div><div class="value" id="ksep">€0</div></div></div>
@@ -35,7 +50,14 @@ table{width:100%;border-collapse:collapse}th,td{padding:10px;border-bottom:1px s
 <div class="card" style="margin-top:15px"><h3>Loan assumptions</h3><div class="form"><div><label>Opening balance ₹</label><input id="loanOpen" type="number"></div><div><label>Monthly payment ₹</label><input id="loanPay" type="number"></div><div><label>Monthly interest %</label><input id="loanRate" type="number" step=".001"></div><div><label>First payment date</label><input id="loanDate" type="date"></div></div><button class="primary" style="margin-top:10px" onclick="calcLoan()">Recalculate</button><div class="note" style="margin-top:10px">This is a planning model, not a lender payoff quote. Actual daily interest, payment timing and fees may change the final figure.</div></div>
 <div class="card" style="margin-top:15px"><h3>Repayment projection</h3><div id="loanRows" class="scroll"></div></div></section>
 
-<section id="settings" class="view"><div class="card"><h2>Settings & backup</h2><p class="muted">Your finance data stays in browser storage unless you export or connect cloud storage.</p><div class="form"><div class="wide"><label>Google OAuth Web Client ID</label><input id="clientId" placeholder="xxxx.apps.googleusercontent.com"></div><div style="align-self:end"><button onclick="localStorage.setItem('googleClientId',clientId.value);toast('Client ID saved')">Save ID</button></div></div><div class="note" style="margin-top:12px">Google Drive sync requires a Google Cloud OAuth Web Client ID and authorized GitHub Pages origin. Never enter your Google password here.</div><div style="margin-top:14px"><button onclick="backup()">Export backup</button> <label class="btn">Import backup <input hidden type="file" accept=".json" onchange="restore(event)"></label> <button class="danger" onclick="resetData()">Reset demo data</button></div></div></section>
+<section id="settings" class="view"><div class="card"><h2>Settings & backup</h2><p class="muted">Your finance data stays in browser storage unless you export or connect cloud storage.</p><div class="form"><div class="wide"><label>Google OAuth Web Client ID</label><input id="clientId" placeholder="xxxx.apps.googleusercontent.com"></div><div style="align-self:end"><button onclick="localStorage.setItem('googleClientId',clientId.value);toast('Client ID saved')">Save ID</button></div></div><div class="note" style="margin-top:12px">Google Drive backup uses Google OAuth and the narrow <b>drive.file</b> permission, which lets this app create/update only the finance backup file it uses. You need a Google Cloud Web Client ID with this GitHub Pages origin authorized. Never enter your Google password here.</div><div style="margin-top:14px"><button onclick="backup()">Export backup</button> <label class="btn">Import backup <input hidden type="file" accept=".json" onchange="restore(event)"></label> <button class="danger" onclick="resetData()">Reset demo data</button></div>
+<div class="driveBox">
+  <b>☁️ Google Drive Backup</b>
+  <div class="driveStatus" id="driveStatus">Not connected. Connect your Google account to save your finance data to Drive.</div>
+  <button class="primary" onclick="connectDrive()">Connect Google Drive</button>
+  <button onclick="backupToDrive()" style="margin-left:6px">Backup to Google Drive</button>
+  <button onclick="restoreFromDrive()" style="margin-left:6px">Restore from Google Drive</button>
+</div></div></section>
 <div id="toast" class="toast"></div></main>
 <script>
 // Explicit DOM references for reliable execution on GitHub Pages.
@@ -62,6 +84,104 @@ let data=hasUsableData?savedData:structuredClone(ORIGINAL),active="2026-09";
 if(!hasUsableData)localStorage.setItem("virajFinance",JSON.stringify(data));
 const fmtEUR=n=>"€"+Number(n||0).toLocaleString("en-IE",{minimumFractionDigits:2,maximumFractionDigits:2}),fmtINR=n=>"₹"+Number(n||0).toLocaleString("en-IN",{maximumFractionDigits:0});
 function sum(o){return Object.values(o||{}).reduce((a,b)=>a+Number(b||0),0)} function monthActual(k){return sum(data.months[k].actual)} function monthBudget(k){return sum(data.months[k].budget)}
+const DRIVE_FILE_NAME="Viraj_Finance_Data.json";
+let driveToken=null;
+
+function login(){
+  const u=byId("loginUser").value.trim(), p=byId("loginPass").value;
+  if(u==="viraj" && p==="finance2026"){
+    sessionStorage.setItem("virajFinanceLoggedIn","1");
+    byId("loginGate").style.display="none";
+    toast("Welcome back");
+  }else byId("loginError").style.display="block";
+}
+function logout(){
+  sessionStorage.removeItem("virajFinanceLoggedIn");
+  location.reload();
+}
+function ensureLogin(){
+  if(sessionStorage.getItem("virajFinanceLoggedIn")==="1")byId("loginGate").style.display="none";
+}
+function setDriveStatus(x){const el=byId("driveStatus");if(el)el.textContent=x}
+
+function getClientId(){
+  return localStorage.getItem("googleClientId") || clientId.value.trim();
+}
+function waitForGIS(){
+  return new Promise((resolve,reject)=>{
+    let n=0;
+    const t=setInterval(()=>{if(window.google&&google.accounts&&google.accounts.oauth2){clearInterval(t);resolve()}else if(++n>100){clearInterval(t);reject(new Error("Google Identity Services did not load."))}},100);
+  });
+}
+async function getDriveToken(){
+  const cid=getClientId();
+  if(!cid){alert("First enter your Google OAuth Web Client ID in Settings.");return null}
+  try{await waitForGIS()}catch(e){alert(e.message);return null}
+  return new Promise(resolve=>{
+    const tc=google.accounts.oauth2.initTokenClient({
+      client_id:cid,
+      scope:"https://www.googleapis.com/auth/drive.file",
+      prompt:"",
+      callback:resp=>{
+        if(resp.error){setDriveStatus("Google authorization failed.");resolve(null);return}
+        driveToken=resp.access_token;
+        setDriveStatus("Google Drive connected. Account selected in Google.");
+        resolve(driveToken);
+      }
+    });
+    tc.requestAccessToken({prompt:"select_account"});
+  });
+}
+async function driveRequest(url,options={}){
+  const token=driveToken||await getDriveToken();
+  if(!token)throw new Error("Google Drive is not connected.");
+  const headers=new Headers(options.headers||{});
+  headers.set("Authorization","Bearer "+token);
+  return fetch(url,{...options,headers});
+}
+async function connectDrive(){
+  try{
+    const token=await getDriveToken();
+    if(token)toast("Google Drive connected");
+  }catch(e){alert(e.message)}
+}
+async function backupToDrive(){
+  try{
+    const token=await getDriveToken(); if(!token)return;
+    const payload=JSON.stringify({app:"Viraj Personal Finance Centre",version:1,savedAt:new Date().toISOString(),data},null,2);
+    const q=encodeURIComponent("name='"+DRIVE_FILE_NAME+"' and trashed=false");
+    const find=await driveRequest("https://www.googleapis.com/drive/v3/files?q="+q+"&spaces=drive&fields=files(id,name)");
+    if(!find.ok)throw new Error("Could not access Google Drive.");
+    const found=(await find.json()).files||[];
+    const metadata={name:DRIVE_FILE_NAME,mimeType:"application/json"};
+    const boundary="-------virajfinance"+Date.now();
+    const body="--"+boundary+"\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n"+JSON.stringify(metadata)+"\r\n--"+boundary+"\r\nContent-Type: application/json\r\n\r\n"+payload+"\r\n--"+boundary+"--";
+    let res;
+    if(found.length){
+      res=await driveRequest("https://www.googleapis.com/upload/drive/v3/files/"+found[0].id+"?uploadType=multipart",{method:"PATCH",headers:{"Content-Type":"multipart/related; boundary="+boundary},body});
+    }else{
+      res=await driveRequest("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart",{method:"POST",headers:{"Content-Type":"multipart/related; boundary="+boundary},body});
+    }
+    if(!res.ok)throw new Error("Drive backup failed ("+res.status+").");
+    setDriveStatus("Last backup: "+new Date().toLocaleString()+" • "+DRIVE_FILE_NAME);
+    toast("Backed up to Google Drive");
+  }catch(e){console.error(e);alert(e.message)}
+}
+async function restoreFromDrive(){
+  try{
+    const token=await getDriveToken(); if(!token)return;
+    const q=encodeURIComponent("name='"+DRIVE_FILE_NAME+"' and trashed=false");
+    const find=await driveRequest("https://www.googleapis.com/drive/v3/files?q="+q+"&spaces=drive&fields=files(id,name)");
+    const found=(await find.json()).files||[];
+    if(!found.length){alert("No Viraj Finance backup was found in this Google Drive.");return}
+    const res=await driveRequest("https://www.googleapis.com/drive/v3/files/"+found[0].id+"?alt=media");
+    if(!res.ok)throw new Error("Could not download the Drive backup.");
+    const obj=await res.json();
+    if(!obj.data||!obj.data.months)throw new Error("The Drive file is not a valid Viraj Finance backup.");
+    data=obj.data;save();render();toast("Restored from Google Drive");
+  }catch(e){console.error(e);alert(e.message)}
+}
+
 function save(){localStorage.setItem("virajFinance",JSON.stringify(data));toast("Saved")}
 function toast(x){let t=toastEl;t.textContent=x;t.style.display="block";clearTimeout(window.tt);window.tt=setTimeout(()=>t.style.display="none",1800)}
 function show(id,btn){document.querySelectorAll(".view").forEach(x=>x.classList.remove("on"));document.getElementById(id).classList.add("on");document.querySelectorAll(".nav button").forEach(x=>x.classList.remove("active"));btn?.classList.add("active");document.getElementById("title").textContent=btn?.textContent?.replace(/^\S+\s/,"")||id[0].toUpperCase()+id.slice(1);render()}
@@ -74,5 +194,5 @@ function addMonth(){let k=newMonth.value;if(!k||data.months[k])return;let d=new 
 function backup(){let a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:"application/json"}));a.download="viraj-finance-backup.json";a.click()}
 function restore(e){let f=e.target.files[0];if(!f)return;let r=new FileReader();r.onload=()=>{try{data=JSON.parse(r.result);save();render();toast("Backup restored")}catch{alert("Invalid backup")}};r.readAsText(f)}
 function resetData(){if(confirm("Reset to the original tracker data?")){data=structuredClone(ORIGINAL);save();render()}}
-render(); if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js");
+ensureLogin(); if(localStorage.getItem("googleClientId"))clientId.value=localStorage.getItem("googleClientId"); render(); if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js");
 </script></body></html>
