@@ -99,6 +99,7 @@ function formatAIText(s){
  t=t.replace(/^#{1,6}\s*/gm,"");
  t=t.replace(/^\s*[-•]\s+/gm,"• ");
  t=t.replace(/^\s*\*\s+/gm,"• ");
+ t=t.replace(/\*+/g,"");
  t=t.replace(/\n{3,}/g,"\n\n");
  return t.replace(/\n/g,"<br>");
 }
