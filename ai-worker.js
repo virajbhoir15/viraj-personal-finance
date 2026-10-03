@@ -73,7 +73,5 @@ export default {
     answer=data.output.map(x=>Array.isArray(x.content)?x.content.map(c=>c.text||"").join(""):"").join("").trim();
   }
   return json({answer:answer||"No text answer was returned."},200,origin,request);
- }catch(e){
-  return json({error:"Worker error: "+String(e&&e.message||e)},500,origin,request);
  }
 };
