@@ -1,4 +1,4 @@
-const CACHE='viraj-finance-v17';
+const CACHE='viraj-finance-v18';
 
 self.addEventListener('install', event => {
   event.waitUntil(
