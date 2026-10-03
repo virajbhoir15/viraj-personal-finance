@@ -22,7 +22,7 @@ data.reconciliations=data.reconciliations||[];
 data.networthHistory=data.networthHistory||[];
 data.settings=data.settings||{};
 data.settings.fxEurInr=N(data.settings.fxEurInr)||100;
-data.creditCard=data.creditCard||{balance:0,limit:0,statementDate:"",dueDate:"",minPayment:0};
+data.creditCard=data.creditCard||{balance:0,limit:0,statementDate:"",dueDate:"",minPayment:0};data.loan=data.loan||{opening:2566709,payment:100000,rate:.875,start:"2026-10-11"};data.detail=data.detail||{Grocery:{},India:{},Misc:{}};
 if(!data.accounts.some(function(a){return a.name==="AIB Regular Account"}))data.accounts.push({id:"aib-regular",name:"AIB Regular Account",currency:"EUR",type:"Bank",balance:0,includeInSafeSpend:true});
 if(!data.accounts.some(function(a){return a.name==="AIB Savings"}))data.accounts.push({id:"aib-savings",name:"AIB Savings",currency:"EUR",type:"Savings",balance:300,includeInSafeSpend:false});
 if(!data.goals.some(function(g){return g.name==="Emergency Fund"}))data.goals.push({id:"emergency",name:"Emergency Fund",target:5000,current:0,currency:"EUR",monthlyContribution:200,targetDate:"2027-12-31"});
