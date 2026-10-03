@@ -4,6 +4,7 @@ var $=function(id){return document.getElementById(id)};
 var KEY_ENDPOINT="virajAIEndpoint";
 var KEY_TOKEN="virajAIToken";
 var KEY_HISTORY="virajAIHistory";
+var DEFAULT_ENDPOINT="https://viraj-finance-ai.virajbhoir-ie.workers.dev";
 
 function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]});}
 function eur(n){return "€"+Number(n||0).toLocaleString("en-IE",{minimumFractionDigits:2,maximumFractionDigits:2});}
@@ -51,10 +52,10 @@ function snapshot(){
  var accounts=(d.accounts||[]).map(function(a){
    return {id:a.id,name:a.name,currency:a.currency,type:a.type,balance:num(a.balance),includeInSafeSpend:a.includeInSafeSpend!==false};
  });
- var tx=(d.transactions||[]).slice().sort(function(a,b){return String(b.date).localeCompare(String(a.date));}).slice(0,150).map(function(t){
+ var tx=(d.transactions||[]).slice().sort(function(a,b){return String(b.date).localeCompare(String(a.date));}).slice(0,500).map(function(t){
    return {date:t.date,description:t.description,amount:num(t.amount),currency:t.currency,type:t.type,category:t.category,accountId:t.accountId,notes:t.notes};
  });
- var monthData=Object.keys(d.months||{}).sort().slice(-6).map(function(k){
+ var monthData=Object.keys(d.months||{}).sort().map(function(k){
    var m=d.months[k]||{};
    return {key:k,label:m.label,income:num(m.income),budget:m.budget||{},actual:m.actual||{},budgetTotal:sumObj(m.budget||{}),actualTotal:sumObj(m.actual||{})};
  });
@@ -155,7 +156,7 @@ async function ask(){
  var h=loadHistory(); h.push({role:"user",text:q}); saveHistory(h); renderChat();
  var pending=$("vAIPending"); if(pending)pending.style.display="block";
  try{
-  var endpoint=(localStorage.getItem(KEY_ENDPOINT)||"").trim();
+  var endpoint=(localStorage.getItem(KEY_ENDPOINT)||DEFAULT_ENDPOINT).trim();
   var token=(localStorage.getItem(KEY_TOKEN)||"").trim();
   var answer;
   if(endpoint){
@@ -205,7 +206,7 @@ function renderStats(){
  var s=snapshot(), el=$("vAIStats"); if(!el)return;
  var l=s.educationLoan, latest=s.recentMonths[s.recentMonths.length-1];
  el.innerHTML='<div class="vaiMini">AIB Regular<b>'+eur(s.aibRegularEUR)+'</b></div><div class="vaiMini">AIB Savings<b>'+eur(s.aibSavingsEUR)+'</b></div><div class="vaiMini">Spendable EUR<b>'+eur(s.spendableEUR)+'</b></div><div class="vaiMini">Safe to spend<b>'+eur(s.safeToSpendEUR)+'</b></div><div class="vaiMini">Latest income<b>'+eur(s.latestSalaryEUR)+'</b></div><div class="vaiMini">Latest spend<b>'+eur(latest?latest.spend:0)+'</b></div><div class="vaiMini">Loan balance<b>'+inr(l?l.opening:0)+'</b></div>';
- var ep=localStorage.getItem(KEY_ENDPOINT)||"";
+ var ep=localStorage.getItem(KEY_ENDPOINT)||DEFAULT_ENDPOINT;
  var e=$("vAIEndpoint"); if(e)e.value=ep;
  var es=$("vAIEndpointSettings"); if(es)es.value=ep;
  var t=$("vAIToken"); if(t)t.value=localStorage.getItem(KEY_TOKEN)||"";
