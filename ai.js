@@ -1,0 +1,179 @@
+(function(){
+"use strict";
+var $=function(id){return document.getElementById(id)};
+var KEY_ENDPOINT="virajAIEndpoint";
+var KEY_TOKEN="virajAIToken";
+var KEY_HISTORY="virajAIHistory";
+
+function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]});}
+function eur(n){return "€"+Number(n||0).toLocaleString("en-IE",{minimumFractionDigits:2,maximumFractionDigits:2});}
+function inr(n){return "₹"+Number(n||0).toLocaleString("en-IN",{maximumFractionDigits:0});}
+function num(n){return Number(n||0);}
+function sumObj(o){return Object.values(o||{}).reduce(function(a,b){return a+num(b)},0);}
+
+function getData(){return window.data || null;}
+function recentMonths(){
+ var d=getData(); if(!d||!d.months)return [];
+ return Object.keys(d.months).sort().slice(-3).map(function(k){return {key:k,label:d.months[k].label,income:num(d.months[k].income),spend:sumObj(d.months[k].actual||{})}});
+}
+function spendable(){
+ var d=getData(); if(!d)return 0;
+ var accounts=Array.isArray(d.accounts)?d.accounts:[];
+ return accounts.filter(function(a){return a.currency==="EUR" && !a.excludeFromSpendable}).reduce(function(a,b){return a+num(b.balance)},0);
+}
+function recurring(){
+ var d=getData(); if(!d)return 0;
+ return (d.recurring||[]).filter(function(x){return x.currency==="EUR"}).reduce(function(a,b){return a+num(b.amount)},0);
+}
+function loanInfo(){
+ var d=getData(),l=d&&d.loan;
+ if(!l)return null;
+ var b=num(l.opening),rate=num(l.rate)/100,pay=num(l.payment),interestTotal=0,n=0,firstInterest=17967;
+ while(b>.01&&n<240){
+  var it=n===0?firstInterest:b*rate;
+  var p=Math.min(pay,b+it);
+  b=Math.max(0,b-(p-it)); interestTotal+=it; n++;
+ }
+ return {opening:num(l.opening),payment:pay,rate:num(l.rate),months:n,interest:interestTotal};
+}
+function goalInfo(){
+ var d=getData(),g=d&&d.goals||[];
+ return g.map(function(x){return {name:x.name,target:num(x.target),current:num(x.current),currency:x.currency||"EUR"}}).filter(function(x){return x.name});
+}
+function snapshot(){
+ var d=getData()||{};
+ var ms=recentMonths();
+ var latest=ms.length?ms[ms.length-1]:null;
+ var tx=(d.transactions||[]).slice(-100).map(function(t){return {date:t.date,description:t.description,amount:num(t.amount),currency:t.currency,type:t.type,category:t.category,accountId:t.accountId,notes:t.notes};});
+ return {
+  asOf:new Date().toISOString(),
+  currency:"EUR for Ireland cash flow; INR for India/education-loan planning",
+  spendableEUR:spendable(),
+  recurringEUR:recurring(),
+  creditCard:d.creditCard||null,
+  latestSalaryEUR:latest?latest.income:0,
+  recentMonths:ms,
+  educationLoan:loanInfo(),
+  goals:goalInfo(),
+  netWorth:d.networth||[],
+  recentTransactions:tx,
+  fxEurInr:d.settings&&d.settings.fxEurInr?num(d.settings.fxEurInr):100,
+  monthlyAIBSaving:100,
+  emergencyReserveEUR:1000,
+  homeTargetINR:20000000
+ };
+}
+function localAnswer(q){
+ var s=q.toLowerCase(), snap=snapshot(), l=snap.educationLoan, latest=snap.recentMonths[snap.recentMonths.length-1];
+ if(/safe|spend|spendable|available cash/.test(s)){
+  var safe=snap.spendableEUR-snap.recurringEUR-snap.emergencyReserveEUR;
+  return "Based on the accounts currently marked as spendable, you have "+eur(snap.spendableEUR)+" available. After recurring EUR commitments of "+eur(snap.recurringEUR)+" and keeping your €1,000 reserve, your current safe-to-spend figure is about "+eur(safe)+". This is a planning figure, not a bank balance forecast.";
+ }
+ if(/loan|education|repay|payoff/.test(s)&&l){
+  return "Your education-loan model starts around "+inr(l.opening)+" with a planned "+inr(l.payment)+" monthly payment at "+l.rate+"% monthly. At that payment, the model takes about "+l.months+" months and models about "+inr(l.interest)+" of future interest. Actual lender figures can differ because daily accruals, payment dates and fees may apply.";
+ }
+ if(/this month|september|october|spend|spent/.test(s)&&latest){
+  return "Your latest tracked month, "+latest.label+", shows income of "+eur(latest.income)+" and tracked spending of "+eur(latest.spend)+", leaving "+eur(latest.income-latest.spend)+" before considering other account-level movements.";
+ }
+ if(/save|saving|aib|emergency/.test(s)){
+  var a=snap.goals.find(function(g){return /emergency/i.test(g.name)});
+  return "Your plan currently includes €100/month going to AIB savings and a €1,000 cash reserve assumption. "+(a?"Emergency Fund is currently "+eur(a.current)+" of "+eur(a.target)+".":"");
+ }
+ if(/home|flat|mumbai|house|2 cr/.test(s)){
+  return "Your Mumbai home goal is recorded as ₹2 Cr (₹20,000,000). The app can model down payment, purchase costs, available INR funds and a target date, but it should not be treated as a mortgage approval or property-price forecast.";
+ }
+ var m=q.match(/(?:can i afford|buy|purchase|spend)\D*([0-9]+(?:\.[0-9]+)?)/i);
+ if(m){
+  var amount=num(m[1]),after=snap.spendableEUR-amount;
+  return "For a €"+amount.toFixed(2)+" purchase, spendable EUR would fall from "+eur(snap.spendableEUR)+" to about "+eur(after)+". With the €"+snap.emergencyReserveEUR+" reserve, the purchase would "+(after>=snap.emergencyReserveEUR?"stay above":"fall below")+" the reserve.";
+ }
+ return "I can already answer common questions from your stored finance data, but full free-form AI is not connected yet. Add your secure AI backend endpoint in Settings, then ask me anything such as “Can I afford €400?”, “How fast will I clear my education loan?”, “Where am I overspending?”, or “Can I save enough for my Mumbai flat?”";
+}
+
+function loadHistory(){try{return JSON.parse(localStorage.getItem(KEY_HISTORY)||"[]")}catch(e){return []}}
+function saveHistory(h){localStorage.setItem(KEY_HISTORY,JSON.stringify(h.slice(-40)))}
+
+function renderChat(){
+ var box=$("vAIChat"); if(!box)return;
+ var h=loadHistory();
+ if(!h.length){
+  box.innerHTML='<div class="vaiEmpty"><div class="vaiRobot">🤖</div><b>Your personal Finance AI</b><p>Ask about your cash, spending, education loan, savings, credit card, goals or a purchase. Answers can use the numbers stored in this app.</p></div>';
+  return;
+ }
+ box.innerHTML=h.map(function(x){return '<div class="vaiMsg '+(x.role==="user"?"user":"assistant")+'"><div class="vaiBubble">'+esc(x.text).replace(/\n/g,"<br>")+'</div></div>'}).join("");
+ box.scrollTop=box.scrollHeight;
+}
+async function ask(){
+ var input=$("vAIInput"),btn=$("vAISend"),q=(input&&input.value||"").trim();
+ if(!q)return;
+ input.value=""; btn.disabled=true;
+ var h=loadHistory(); h.push({role:"user",text:q}); saveHistory(h); renderChat();
+ var pending=$("vAIPending"); if(pending)pending.style.display="block";
+ try{
+  var endpoint=(localStorage.getItem(KEY_ENDPOINT)||"").trim();
+  var token=(localStorage.getItem(KEY_TOKEN)||"").trim();
+  var answer;
+  if(endpoint){
+   var res=await fetch(endpoint,{method:"POST",headers:Object.assign({"Content-Type":"application/json"},token?{"X-Viraj-App-Token":token}:{}),body:JSON.stringify({question:q,finance:snapshot(),history:h.slice(-12)})});
+   var body=await res.json().catch(function(){return {}}); 
+   if(!res.ok)throw new Error(body.error||"AI backend returned HTTP "+res.status);
+   answer=body.answer||body.output_text||"The AI backend returned no answer.";
+  }else{
+   answer=localAnswer(q);
+  }
+  h=loadHistory(); h.push({role:"assistant",text:answer}); saveHistory(h); renderChat();
+ }catch(e){
+  h=loadHistory(); h.push({role:"assistant",text:"I could not reach the AI backend: "+e.message+" You can still use the built-in finance calculations, or check the AI endpoint in Settings."}); saveHistory(h); renderChat();
+ }finally{
+  if(pending)pending.style.display="none";
+  btn.disabled=false; if(input)input.focus();
+ }
+}
+function clearChat(){localStorage.removeItem(KEY_HISTORY);renderChat();}
+
+function inject(){
+ if($("vAISection"))return;
+ var style=document.createElement("style");
+ style.textContent=".vaiLayout{display:grid;grid-template-columns:1.5fr .5fr;gap:15px}.vaiChat{height:480px;overflow:auto;padding:8px;background:#f8fafc;border-radius:14px}.vaiMsg{display:flex;margin:9px 0}.vaiMsg.user{justify-content:flex-end}.vaiBubble{max-width:82%;padding:11px 13px;border-radius:14px;background:#fff;border:1px solid #e5e7eb;line-height:1.45}.vaiMsg.user .vaiBubble{background:#4f46e5;color:#fff;border-color:#4f46e5}.vaiEmpty{text-align:center;padding:70px 25px;color:#667085}.vaiRobot{font-size:38px;margin-bottom:8px}.vaiComposer{display:flex;gap:8px;margin-top:10px}.vaiComposer input{flex:1}.vaiPending{display:none;color:#667085;font-size:12px;margin:8px}.vaiChips{display:flex;gap:7px;flex-wrap:wrap;margin:10px 0}.vaiChip{background:#eef2ff;color:#3730a3;border:0}.vaiMini{padding:12px;border-radius:12px;background:#f8fafc;margin:9px 0;font-size:12px}.vaiMini b{display:block;font-size:18px;margin-top:3px}@media(max-width:900px){.vaiLayout{grid-template-columns:1fr}.vaiChat{height:400px}}";
+ document.head.appendChild(style);
+
+ var nav=document.querySelector(".nav");
+ if(nav){
+  var nb=document.createElement("button"); nb.id="vAINav"; nb.textContent="🤖 Finance AI";
+  nb.onclick=function(){if(typeof show==="function")show("ai",nb);else document.getElementById("ai").classList.add("on");};
+  nav.appendChild(nb);
+ }
+ var main=document.querySelector("main"); if(!main)return;
+ var sec=document.createElement("section"); sec.id="ai"; sec.className="view";
+ sec.innerHTML='<div id="vAISection"><div class="card hero"><h2 style="margin:0">🤖 Finance AI Copilot</h2><p class="muted">Ask questions using your actual finance data. The AI receives a compact snapshot of your balances, spending, goals and loan model.</p></div><div class="vaiLayout" style="margin-top:15px"><div class="card"><div class="sectionTitle"><h3>Ask anything about your money</h3><button onclick="vAIClear()">Clear chat</button></div><div id="vAIChat" class="vaiChat"></div><div class="vaiPending" id="vAIPending">Thinking about your numbers…</div><div class="vaiChips"><button class="vaiChip" onclick="vAIPrompt(this)">Can I afford €400?</button><button class="vaiChip" onclick="vAIPrompt(this)">How fast can I clear my education loan?</button><button class="vaiChip" onclick="vAIPrompt(this)">Where am I overspending?</button><button class="vaiChip" onclick="vAIPrompt(this)">How much can I safely spend?</button></div><div class="vaiComposer"><input id="vAIInput" placeholder="Ask anything about your finances…"><button id="vAISend" class="primary" onclick="vAIAsk()">Ask AI</button></div></div><div><div class="card"><h3>Live finance context</h3><div id="vAIStats"></div></div><div class="card" style="margin-top:15px"><h3>AI connection</h3><p class="muted small">For true free-form AI, point this app at the secure backend. Never put an OpenAI API key here.</p><div><label>AI backend URL</label><input id="vAIEndpoint" placeholder="https://your-worker.example.workers.dev"></div><div style="margin-top:9px"><label>Backend access token (optional)</label><input id="vAIToken" type="password" placeholder="Shared app token"></div><button class="primary" style="margin-top:10px" onclick="vAISaveConfig()">Save AI connection</button><div id="vAIConfigStatus" class="muted small" style="margin-top:8px"></div></div></div></div></div>';
+ main.appendChild(sec);
+ var settings=document.getElementById("settings");
+ if(settings){
+  var card=settings.querySelector(".card");
+  if(card){
+   var box=document.createElement("div"); box.className="driveBox"; box.innerHTML='<b>🤖 Finance AI backend</b><div class="driveStatus">The AI Copilot can use the same finance data stored by this app. Configure the endpoint here after deploying the secure backend.</div><div style="margin-top:8px"><input id="vAIEndpointSettings" placeholder="AI backend URL"></div><button class="primary" style="margin-top:8px" onclick="localStorage.setItem(\"virajAIEndpoint\",document.getElementById(\"vAIEndpointSettings\").value.trim());toast(\"AI endpoint saved\")">Save AI endpoint</button>'; card.appendChild(box);
+  }
+ }
+}
+
+function renderStats(){
+ var s=snapshot(), el=$("vAIStats"); if(!el)return;
+ var l=s.educationLoan, latest=s.recentMonths[s.recentMonths.length-1];
+ el.innerHTML='<div class="vaiMini">Spendable EUR<b>'+eur(s.spendableEUR)+'</b></div><div class="vaiMini">Recurring EUR<b>'+eur(s.recurringEUR)+'</b></div><div class="vaiMini">Latest income<b>'+eur(s.latestSalaryEUR)+'</b></div><div class="vaiMini">Loan balance<b>'+inr(l?l.opening:0)+'</b></div><div class="vaiMini">Latest tracked spend<b>'+eur(latest?latest.spend:0)+'</b></div>';
+ var ep=localStorage.getItem(KEY_ENDPOINT)||"";
+ var e=$("vAIEndpoint"); if(e)e.value=ep;
+ var es=$("vAIEndpointSettings"); if(es)es.value=ep;
+ var t=$("vAIToken"); if(t)t.value=localStorage.getItem(KEY_TOKEN)||"";
+ var cs=$("vAIConfigStatus"); if(cs)cs.textContent=ep?"AI backend configured.":"Built-in finance answers are active; full AI is awaiting a backend URL.";
+}
+function saveConfig(){
+ var e=($("vAIEndpoint")&&$("vAIEndpoint").value||"").trim(),t=($("vAIToken")&&$("vAIToken").value||"").trim();
+ if(e&&!/^https?:\/\//i.test(e))return alert("Enter a valid HTTPS backend URL.");
+ localStorage.setItem(KEY_ENDPOINT,e); if(t)localStorage.setItem(KEY_TOKEN,t); else localStorage.removeItem(KEY_TOKEN);
+ renderStats(); if(typeof toast==="function")toast("AI connection saved");
+}
+window.vAIAsk=ask; window.vAIClear=clearChat; window.vAISaveConfig=saveConfig;
+window.vAIPrompt=function(b){var i=$("vAIInput");if(i){i.value=b.textContent;i.focus()}};
+function boot(){inject();renderChat();renderStats();var i=$("vAIInput");if(i)i.addEventListener("keydown",function(e){if(e.key==="Enter"){e.preventDefault();ask()}});}
+if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",boot);else boot();
+})();
