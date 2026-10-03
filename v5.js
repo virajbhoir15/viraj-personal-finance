@@ -220,8 +220,13 @@
   };
   window.v5DeleteTransaction=function(id){
     var t=data.transactions.find(function(x){return x.id===id});if(!t)return;
-    if(!confirm('Delete this transaction? The linked account balance will not be reversed automatically. Edit the account balance if needed.'))return;
-    data.transactions=data.transactions.filter(function(x){return x.id!==id});saveData();renderTransactions();
+    if(!confirm('Delete this transaction and reverse its effect on the linked account balance?'))return;
+    var a=data.accounts.find(function(x){return x.id===t.accountId});
+    if(a&&t.currency===a.currency&&t.type!=='transfer'){
+      a.balance += t.type==='income' ? -t.amount : t.amount;
+    }
+    data.transactions=data.transactions.filter(function(x){return x.id!==id});
+    saveData();renderTransactions();renderAccounts();renderDashboard();
   };
   window.v5ClearTransactions=function(){if(!confirm('Delete every transaction in the ledger?'))return;data.transactions=[];saveData();renderTransactions();};
 
