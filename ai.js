@@ -44,6 +44,10 @@ function snapshot(){
  var d=getData()||{};
  var ms=recentMonths();
  var latest=ms.length?ms[ms.length-1]:null;
+ var incomeMonths=ms.filter(function(x){return x.income>0;});
+ var latestIncomeMonth=incomeMonths.length?incomeMonths[incomeMonths.length-1]:null;
+ var spendMonths=ms.filter(function(x){return x.spend>0;});
+ var latestSpendMonth=spendMonths.length?spendMonths[spendMonths.length-1]:null;
  var accounts=(d.accounts||[]).map(function(a){
    return {id:a.id,name:a.name,currency:a.currency,type:a.type,balance:num(a.balance),includeInSafeSpend:a.includeInSafeSpend!==false};
  });
@@ -71,7 +75,10 @@ function snapshot(){
   recurringEUR:recurring(),
   safeToSpendEUR:safe,
   creditCard:d.creditCard||null,
-  latestSalaryEUR:latest?latest.income:0,
+  latestSalaryEUR:latestIncomeMonth?latestIncomeMonth.income:0,
+  latestIncomeMonth:latestIncomeMonth,
+  latestSpendMonth:latestSpendMonth,
+  currentMonth:monthData.length?monthData[monthData.length-1]:null,
   recentMonths:ms,
   monthData:monthData,
   trackerDetail:detail,
@@ -84,7 +91,8 @@ function snapshot(){
   fxEurInr:d.settings&&d.settings.fxEurInr?num(d.settings.fxEurInr):100,
   monthlyAIBSaving:100,
   emergencyReserveEUR:1000,
-  homeTargetINR:20000000
+  homeTargetINR:20000000,
+  creditCardDueDays:(function(){var cd=d.creditCard||{};if(!cd.dueDate)return null;var ms=new Date(cd.dueDate+"T23:59:59").getTime()-Date.now();return Math.ceil(ms/86400000)})()
  };
 }
 function localAnswer(q){
