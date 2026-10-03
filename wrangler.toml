@@ -1,0 +1,6 @@
+name = "viraj-finance-ai"
+main = "ai-worker.js"
+compatibility_date = "2026-10-03"
+
+[secrets]
+required = ["OPENAI_API_KEY"]
