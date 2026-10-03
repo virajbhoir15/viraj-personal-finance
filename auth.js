@@ -41,7 +41,7 @@ function init(){
  if(top&&!$("v7AccountBtn")){
   var b=document.createElement("button");b.id="v7AccountBtn";b.textContent="Google account";b.onclick=function(){googleLogin()};top.insertBefore(b,top.firstChild);
  }
- window.v7GoogleLogin=googleLogin;window.v7GoogleLogout=signOutGoogle;
+ window.v7GoogleLogin=googleLogin;window.v7GoogleLogout=signOutGoogle;var oldLogout=window.logout;window.logout=function(){signOutGoogle();if(typeof oldLogout==="function")oldLogout();else location.reload()};
 }
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init);else init();
 })();
