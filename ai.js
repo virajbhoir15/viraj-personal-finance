@@ -93,6 +93,15 @@ function localAnswer(q){
 function loadHistory(){try{return JSON.parse(localStorage.getItem(KEY_HISTORY)||"[]")}catch(e){return []}}
 function saveHistory(h){localStorage.setItem(KEY_HISTORY,JSON.stringify(h.slice(-40)))}
 
+function formatAIText(s){
+ var t=esc(s);
+ t=t.replace(/\*\*(.*?)\*\*/g,"$1");
+ t=t.replace(/^#{1,6}\s*/gm,"");
+ t=t.replace(/^\s*[-•]\s+/gm,"• ");
+ t=t.replace(/^\s*\*\s+/gm,"• ");
+ t=t.replace(/\n{3,}/g,"\n\n");
+ return t.replace(/\n/g,"<br>");
+}
 function renderChat(){
  var box=$("vAIChat"); if(!box)return;
  var h=loadHistory();
@@ -100,7 +109,7 @@ function renderChat(){
   box.innerHTML='<div class="vaiEmpty"><div class="vaiRobot">🤖</div><b>Your personal Finance AI</b><p>Ask about your cash, spending, education loan, savings, credit card, goals or a purchase. Answers can use the numbers stored in this app.</p></div>';
   return;
  }
- box.innerHTML=h.map(function(x){return '<div class="vaiMsg '+(x.role==="user"?"user":"assistant")+'"><div class="vaiBubble">'+esc(x.text).replace(/\n/g,"<br>")+'</div></div>'}).join("");
+ box.innerHTML=h.map(function(x){return '<div class="vaiMsg '+(x.role==="user"?"user":"assistant")+'"><div class="vaiBubble">'+formatAIText(x.text)+'</div></div>'}).join("");
  box.scrollTop=box.scrollHeight;
 }
 async function ask(){
