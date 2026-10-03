@@ -35,10 +35,40 @@ window.v6Afford=function(){var c=N($("v6Buy").value),r=N($("v6Res").value),a=spe
 function renderRecurring(){var s=$("v6rAcc");s.innerHTML='<option value="">Unassigned</option>'+data.accounts.map(function(a){return'<option value="'+a.id+'">'+esc(a.name)+" · "+a.currency+"</option>"}).join("");var rows=data.recurring.map(function(x){return "<tr><td>"+esc(x.name)+"</td><td>"+(x.currency==="INR"?R(x.amount):E(x.amount))+"</td><td>"+x.day+"</td><td>"+esc(x.category)+"</td><td><button class='danger' onclick='v6DelRecurring(\""+x.id+"\")'>Delete</button></td></tr>"}).join("");$("v6Recurring").innerHTML=rows?'<table class="v5table"><tr><th>Name</th><th>Amount</th><th>Day</th><th>Category</th><th></th></tr>'+rows+"</table>":"<div class='v6a'>No recurring payments yet.</div>"}
 window.v6AddRecurring=function(){var name=$("v6rName").value.trim(),amt=N($("v6rAmt").value);if(!name||amt<=0)return alert("Enter name and amount.");data.recurring.push({id:uid(),name:name,amount:amt,currency:$("v6rCur").value,day:Math.min(28,Math.max(1,parseInt($("v6rDay").value)||1)),category:$("v6rCat").value.trim()||"Other",accountId:$("v6rAcc").value});save6("Recurring saved");renderRecurring();renderCash()};
 window.v6DelRecurring=function(id){data.recurring=data.recurring.filter(function(x){return x.id!==id});save6();renderRecurring();renderCash()};
-function renderRec(){var s=$("v6recAcc");s.innerHTML=data.accounts.map(function(a){return'<option value="'+a.id+'">'+esc(a.name)+" · "+a.currency+"</option>"}).join("");var rows=data.reconciliations.slice().reverse().map(function(x){return"<tr><td>"+x.date+"</td><td>"+esc(x.account)+"</td><td>"+E(x.app)+"</td><td>"+E(x.actual)+"</td><td>"+E(x.diff)+"</td></tr>"}).join("");$("v6Rec").innerHTML=rows?'<table class="v5table"><tr><th>Date</th><th>Account</th><th>App</th><th>Actual</th><th>Difference</th></tr>'+rows+"</table>":"<div class='v6a'>No reconciliation history.</div>"}
-window.v6Reconcile=function(){var a=data.accounts.find(function(x){return x.id===$("v6recAcc").value});if(!a)return;var actual=N($("v6recActual").value),d=$("v6recDate").value||new Date().toISOString().slice(0,10);data.reconciliations.push({date:d,account:a.name,app:N(a.balance),actual:actual,diff:actual-N(a.balance)});save6("Reconciliation saved");renderRec();renderAlerts()};
+function renderRec(){
+ var s=$("v6recAcc");
+ s.innerHTML=data.accounts.map(function(a){return'<option value="'+a.id+'">'+esc(a.name)+" · "+a.currency+"</option>"}).join("");
+ var rows=data.reconciliations.slice().reverse().map(function(x){
+   var f=x.currency==="INR"?R:E;
+   return"<tr><td>"+x.date+"</td><td>"+esc(x.account)+"</td><td>"+f(x.app)+"</td><td>"+f(x.actual)+"</td><td>"+f(x.diff)+"</td></tr>";
+ }).join("");
+ $("v6Rec").innerHTML=rows?'<table class="v5table"><tr><th>Date</th><th>Account</th><th>Currency</th><th>App</th><th>Actual</th><th>Difference</th></tr>'+rows+"</table>":"<div class='v6a'>No reconciliation history.</div>"
+}
+window.v6Reconcile=function(){
+ var a=data.accounts.find(function(x){return x.id===$("v6recAcc").value});
+ if(!a)return;
+ var actual=N($("v6recActual").value),d=$("v6recDate").value||new Date().toISOString().slice(0,10);
+ data.reconciliations.push({date:d,account:a.name,currency:a.currency,app:N(a.balance),actual:actual,diff:actual-N(a.balance)});
+ save6("Reconciliation saved");renderRec();renderAlerts();
+};
 function renderAnalytics(){var c={},m={};Object.keys(data.months).slice(-3).forEach(function(k){Object.keys(data.months[k].actual||{}).forEach(function(z){c[z]=(c[z]||0)+N(data.months[k].actual[z])})});data.transactions.forEach(function(t){if(t.type==="expense"&&t.currency==="EUR"){c[t.category||"Other"]=(c[t.category||"Other"]||0)+N(t.amount);m[t.description||"Unknown"]=(m[t.description||"Unknown"]||0)+N(t.amount)}});var cr=Object.entries(c).sort(function(a,b){return b[1]-a[1]}).map(function(x){return"<tr><td>"+esc(x[0])+"</td><td>"+E(x[1])+"</td></tr>"}).join(""),mr=Object.entries(m).sort(function(a,b){return b[1]-a[1]}).slice(0,10).map(function(x){return"<tr><td>"+esc(x[0])+"</td><td>"+E(x[1])+"</td></tr>"}).join("");$("v6Analytics").innerHTML='<div class="card"><h3>Spend by category</h3><table class="v5table"><tr><th>Category</th><th>Amount</th></tr>'+cr+"</table></div><div class='card'><h3>Top transaction descriptions</h3><table class='v5table'><tr><th>Description</th><th>Amount</th></tr>"+mr+"</table></div>";$("v6Analytics2").innerHTML="<h3>Fixed vs variable</h3><div class='v6g'><div class='v6t'><div class='eyebrow'>Fixed recurring</div><div class='v6n'>"+E(recurringEUR())+"</div></div><div class='v6t'><div class='eyebrow'>Recent tracked spend</div><div class='v6n'>"+E(avgSpend())+"</div></div></div>"}
-function renderAlerts(){var a=[],cc=data.creditCard||{},u=cc.limit?cc.balance/cc.limit:0;if(u>.8)a.push(["bad","Credit card utilisation is above 80%."]);else if(u>.5)a.push(["warn","Credit card utilisation is above 50%."]);var safe=spendable()-recurringEUR()-1000;if(safe<0)a.push(["bad","Current recurring commitments plus the €1,000 reserve exceed spendable cash."]);var ef=data.goals.find(function(g){return g.name==="Emergency Fund"});if(ef&&ef.target&&N(ef.current)<N(ef.target))a.push(["warn","Emergency Fund is "+(N(ef.current)/N(ef.target)*100).toFixed(0)+"% funded."]);if(!a.length)a.push(["good","No major rule-based alerts detected."]);$("v6Alerts").innerHTML=a.map(function(x){return'<div class="v6a '+x[0]+'">'+esc(x[1])+"</div>"}).join("")}
+function renderAlerts(){
+ var a=[],cc=data.creditCard||{},u=cc.limit?cc.balance/cc.limit:0;
+ if(u>.8)a.push(["bad","Credit card utilisation is above 80%."]);
+ else if(u>.5)a.push(["warn","Credit card utilisation is above 50%."]);
+ var safe=spendable()-recurringEUR()-1000;
+ if(safe<0)a.push(["bad","Current recurring commitments plus the €1,000 reserve exceed spendable cash."]);
+ var ef=data.goals.find(function(g){return g.name==="Emergency Fund"});
+ if(ef&&ef.target&&N(ef.current)<N(ef.target))a.push(["warn","Emergency Fund is "+(N(ef.current)/N(ef.target)*100).toFixed(0)+"% funded."]);
+ if(cc.dueDate){
+   var today=new Date(); today.setHours(0,0,0,0);
+   var due=new Date(cc.dueDate+"T00:00:00"); var days=Math.ceil((due-today)/86400000);
+   if(days>=0&&days<=7)a.push(["warn","Credit-card payment is due in "+days+" day"+(days===1?"":"s")+"."]);
+   else if(days<0&&cc.balance>0)a.push(["bad","Credit-card payment due date has passed and a balance is recorded."]);
+ }
+ if(!a.length)a.push(["good","No major rule-based alerts detected."]);
+ $("v6Alerts").innerHTML=a.map(function(x){return'<div class="v6a '+x[0]+'">'+esc(x[1])+"</div>"}).join("")
+}
 function defaults(){var m=Object.values(data.months).slice(-1)[0]||{};$("v6si").value=N(m.income);$("v6ss").value=avgSpend();$("v6sc").value=spendable()}
 window.v6Scenario=function(){var i=N($("v6si").value),s=N($("v6ss").value),a=N($("v6sa").value),b=N($("v6sc").value),mo=Math.max(1,Math.min(120,parseInt($("v6sm").value)||12)),rows="";for(var k=1;k<=Math.min(12,mo);k++){b+=i-s-a;rows+="<tr><td>"+k+"</td><td>"+E(b)+"</td></tr>"}data.scenarios.push({date:new Date().toISOString(),income:i,spend:s,aib:a,loan:N($("v6sl").value),months:mo});save6("Scenario saved");$("v6Scenario").innerHTML='<div class="v6g"><div class="v6t"><div class="eyebrow">Monthly surplus</div><div class="v6n">'+E(i-s-a)+'</div></div><div class="v6t"><div class="eyebrow">Ending cash</div><div class="v6n">'+E(b)+'</div></div><div class="v6t"><div class="eyebrow">Loan payment</div><div class="v6n">'+R($("v6sl").value)+'</div></div></div><table class="v5table"><tr><th>Month</th><th>Ending cash</th></tr>'+rows+"</table>"};
 function emi(p,r,n){r=r/1200;return r?p*r*Math.pow(1+r,n)/(Math.pow(1+r,n)-1):p/n}
