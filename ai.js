@@ -44,19 +44,43 @@ function snapshot(){
  var d=getData()||{};
  var ms=recentMonths();
  var latest=ms.length?ms[ms.length-1]:null;
- var tx=(d.transactions||[]).slice(-100).map(function(t){return {date:t.date,description:t.description,amount:num(t.amount),currency:t.currency,type:t.type,category:t.category,accountId:t.accountId,notes:t.notes};});
+ var accounts=(d.accounts||[]).map(function(a){
+   return {id:a.id,name:a.name,currency:a.currency,type:a.type,balance:num(a.balance),includeInSafeSpend:a.includeInSafeSpend!==false};
+ });
+ var tx=(d.transactions||[]).slice().sort(function(a,b){return String(b.date).localeCompare(String(a.date));}).slice(0,150).map(function(t){
+   return {date:t.date,description:t.description,amount:num(t.amount),currency:t.currency,type:t.type,category:t.category,accountId:t.accountId,notes:t.notes};
+ });
+ var monthData=Object.keys(d.months||{}).sort().slice(-6).map(function(k){
+   var m=d.months[k]||{};
+   return {key:k,label:m.label,income:num(m.income),budget:m.budget||{},actual:m.actual||{},budgetTotal:sumObj(m.budget||{}),actualTotal:sumObj(m.actual||{})};
+ });
+ var detail=d.detail||{};
+ var goals=goalInfo();
+ var safe=spendable()-recurring()-1000;
+ var totalEUR=accounts.filter(function(a){return a.currency==="EUR"&&a.type!=="Credit Card"}).reduce(function(s,a){return s+a.balance},0);
+ var savings=accounts.filter(function(a){return a.name==="AIB Savings"&&a.currency==="EUR"}).reduce(function(s,a){return s+a.balance},0);
+ var current=accounts.filter(function(a){return a.name==="AIB Regular Account"&&a.currency==="EUR"}).reduce(function(s,a){return s+a.balance},0);
  return {
   asOf:new Date().toISOString(),
   currency:"EUR for Ireland cash flow; INR for India/education-loan planning",
+  accounts:accounts,
+  aibRegularEUR:current,
+  aibSavingsEUR:savings,
+  totalEURCash:totalEUR,
   spendableEUR:spendable(),
   recurringEUR:recurring(),
+  safeToSpendEUR:safe,
   creditCard:d.creditCard||null,
   latestSalaryEUR:latest?latest.income:0,
   recentMonths:ms,
+  monthData:monthData,
+  trackerDetail:detail,
   educationLoan:loanInfo(),
-  goals:goalInfo(),
+  goals:goals,
   netWorth:d.networth||[],
+  netWorthHistory:d.networthHistory||[],
   recentTransactions:tx,
+  recurringPayments:d.recurring||[],
   fxEurInr:d.settings&&d.settings.fxEurInr?num(d.settings.fxEurInr):100,
   monthlyAIBSaving:100,
   emergencyReserveEUR:1000,
@@ -169,7 +193,7 @@ function inject(){
 function renderStats(){
  var s=snapshot(), el=$("vAIStats"); if(!el)return;
  var l=s.educationLoan, latest=s.recentMonths[s.recentMonths.length-1];
- el.innerHTML='<div class="vaiMini">Spendable EUR<b>'+eur(s.spendableEUR)+'</b></div><div class="vaiMini">Recurring EUR<b>'+eur(s.recurringEUR)+'</b></div><div class="vaiMini">Latest income<b>'+eur(s.latestSalaryEUR)+'</b></div><div class="vaiMini">Loan balance<b>'+inr(l?l.opening:0)+'</b></div><div class="vaiMini">Latest tracked spend<b>'+eur(latest?latest.spend:0)+'</b></div>';
+ el.innerHTML='<div class="vaiMini">AIB Regular<b>'+eur(s.aibRegularEUR)+'</b></div><div class="vaiMini">AIB Savings<b>'+eur(s.aibSavingsEUR)+'</b></div><div class="vaiMini">Spendable EUR<b>'+eur(s.spendableEUR)+'</b></div><div class="vaiMini">Safe to spend<b>'+eur(s.safeToSpendEUR)+'</b></div><div class="vaiMini">Latest income<b>'+eur(s.latestSalaryEUR)+'</b></div><div class="vaiMini">Latest spend<b>'+eur(latest?latest.spend:0)+'</b></div><div class="vaiMini">Loan balance<b>'+inr(l?l.opening:0)+'</b></div>';
  var ep=localStorage.getItem(KEY_ENDPOINT)||"";
  var e=$("vAIEndpoint"); if(e)e.value=ep;
  var es=$("vAIEndpointSettings"); if(es)es.value=ep;
