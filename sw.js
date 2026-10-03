@@ -1,9 +1,9 @@
-const CACHE='viraj-finance-v11';
+const CACHE='viraj-finance-v12';
 
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE)
-      .then(cache => cache.addAll(['./','./index.html','./manifest.json','./v5.js','./v6.js','./auth.js','./ai.js']))
+      .then(cache => cache.addAll(['./','./index.html','./manifest.json','./v5.js','./v6.js','./auth.js','./app.js','./ai.js']))
       .then(() => self.skipWaiting())
   );
 });
