@@ -125,7 +125,8 @@ function snapshot(){var e=data.accounts.filter(function(a){return a.currency==="
 function show(id){
  if(id==="more"){document.body.classList.toggle("mobileMore");return}
  window.__view=id;navActive(id);var names={dashboard:"Dashboard",transactions:"Transactions",budget:"Budget",accounts:"Accounts",goals:"Goals",loan:"Education Loan",reports:"Reports",planning:"Planning",ai:"Finance AI",settings:"Settings"};setTitle(names[id]||"Dashboard");
- if(id==="ai"){if(window.vAISection||$("vAISection")){if(typeof window.vAIAsk==="function"){};var sec=$("ai");if(sec)sec.classList.add("on")}else{$("pfContent").innerHTML='<div class="heroRow"><div><div class="eyebrow">AI COPILOT</div><h2>Finance AI</h2><p>Loading your finance assistant…</p></div></div>';setTimeout(function(){if($("vAISection"))show("ai")},150)}return}
+ var aiSec=$("ai");if(aiSec)aiSec.style.display=id==="ai"?"block":"none";var content=$("pfContent");if(content)content.style.display=id==="ai"?"none":"block";
+ if(id==="ai"){if($("vAISection")){$("vAISection").style.display="block";var chat=$("vAIChat");if(chat&&typeof window.vAIAsk==="function"){};return}else{if(content)content.innerHTML='<div class="heroRow"><div><div class="eyebrow">AI COPILOT</div><h2>Finance AI</h2><p>Loading your finance assistant…</p></div></div>';setTimeout(function(){show("ai")},180);return}}
  var fn={dashboard:dashboard,transactions:transactionsView,budget:budgetView,accounts:accountsView,goals:goalsView,loan:loanView,reports:reportsView,planning:planningView,settings:settingsView}[id]||dashboard;fn();
 }
 window.show=show;
