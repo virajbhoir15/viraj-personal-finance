@@ -48,10 +48,6 @@ function snapshot(){
  var latestIncomeMonth=incomeMonths.length?incomeMonths[incomeMonths.length-1]:null;
  var spendMonths=ms.filter(function(x){return x.spend>0;});
  var latestSpendMonth=spendMonths.length?spendMonths[spendMonths.length-1]:null;
- var incomeMonths=ms.filter(function(x){return x.income>0;});
- var latestIncomeMonth=incomeMonths.length?incomeMonths[incomeMonths.length-1]:null;
- var spendMonths=ms.filter(function(x){return x.spend>0;});
- var latestSpendMonth=spendMonths.length?spendMonths[spendMonths.length-1]:null;
  var accounts=(d.accounts||[]).map(function(a){
    return {id:a.id,name:a.name,currency:a.currency,type:a.type,balance:num(a.balance),includeInSafeSpend:a.includeInSafeSpend!==false};
  });
@@ -63,6 +59,8 @@ function snapshot(){
    return {key:k,label:m.label,income:num(m.income),budget:m.budget||{},actual:m.actual||{},budgetTotal:sumObj(m.budget||{}),actualTotal:sumObj(m.actual||{})};
  });
  var detail=d.detail||{};
+ var budgetAlerts=[];
+ monthData.forEach(function(m){Object.keys(m.budget||{}).forEach(function(cat){var b=num(m.budget[cat]),x=num((m.actual||{})[cat]);if(b>0&&x>b)budgetAlerts.push({month:m.label,category:cat,over:num(x-b)});});});
  var goals=goalInfo();
  var safe=spendable()-recurring()-1000;
  var totalEUR=accounts.filter(function(a){return a.currency==="EUR"&&a.type!=="Credit Card"}).reduce(function(s,a){return s+a.balance},0);
@@ -96,6 +94,7 @@ function snapshot(){
   monthlyAIBSaving:100,
   emergencyReserveEUR:1000,
   homeTargetINR:20000000,
+  budgetAlerts:budgetAlerts,
   creditCardDueDays:(function(){var cd=d.creditCard||{};if(!cd.dueDate)return null;return Math.ceil((new Date(cd.dueDate+"T23:59:59").getTime()-Date.now())/86400000);})(),
   creditCardDueDays:(function(){var cd=d.creditCard||{};if(!cd.dueDate)return null;var ms=new Date(cd.dueDate+"T23:59:59").getTime()-Date.now();return Math.ceil(ms/86400000)})()
  };
