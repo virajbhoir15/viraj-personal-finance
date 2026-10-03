@@ -8,9 +8,14 @@
   function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(m){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m];}); }
   function eur(v){ return fmtEUR(n(v)); }
   function inr(v){ return fmtINR(n(v)); }
+  var backupTimer=null;
   function saveData(){
     localStorage.setItem('virajFinance',JSON.stringify(data));
     if(typeof toast==='function')toast('Saved');
+    if(localStorage.getItem('googleClientId')&&typeof backupToDrive==='function'){
+      clearTimeout(backupTimer);
+      backupTimer=setTimeout(function(){try{backupToDrive(true);}catch(e){}},15000);
+    }
   }
   function monthLabel(k){
     var d=new Date(k+'-01T00:00:00');
@@ -227,7 +232,7 @@
       return '<div class="v5box"><div class="sectionTitle"><h3>'+esc(g.name)+'</h3><button class="danger" onclick="v5DeleteGoal(\''+g.id+'\')">Delete</button></div><div class="v5num">'+cur+' / '+tar+'</div><div class="progress" style="margin:10px 0"><span style="width:'+pct+'%"></span></div><div class="v5mini">'+pct.toFixed(0)+'% complete • '+(n(g.monthlyContribution)?((g.currency==='INR'?inr(g.monthlyContribution):eur(g.monthlyContribution))+'/month'):'no monthly plan')+'</div><div class="form" style="margin-top:10px"><div><label>Current</label><input type="number" step=".01" value="'+n(g.current)+'" onchange="v5UpdateGoal(\''+g.id+'\',this.value)"></div></div></div>';
     }).join('');
     by('v5Goals').innerHTML=html;
-    var a=data.accounts.find(function(x){return x.name==='AIB Savings'});by('v5AibBalance').textContent=eur(a?a.balance:0);
+    var a=data.accounts.find(function(x){return x.name==='AIB Savings'});var aibBal=a?a.balance:0;var fg=data.goals.find(function(x){return x.name==='iPhone / India Tour'});if(fg)fg.current=aibBal;by('v5AibBalance').textContent=eur(aibBal);
   }
   window.v5AddGoal=function(){
     var name=by('v5gName').value.trim();if(!name)return alert('Enter a goal name.');
