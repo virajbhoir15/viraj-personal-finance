@@ -25,7 +25,7 @@ function json(body, status, origin, request) {
 }
 
 function compactFinance(f) {
-  return JSON.stringify(f || {}, null, 2).slice(0, 30000);
+  return JSON.stringify(f || {}, null, 2).slice(0, 90000);
 }
 
 function extractAnswer(result) {
@@ -118,9 +118,9 @@ export default {
 
     const instructions = [
       "You are Viraj's private personal finance copilot.",
-      "Answer using the finance snapshot supplied in the user message. Treat those figures as the current app data, not as live bank data.",
+      "Answer using the finance snapshot supplied in the user message. Treat those figures as the current app data, not as live bank data. The snapshot is the source of truth for this user: use accounts, card balances, transactions, monthly budgets/actuals, goals, recurring payments, net-worth history, education-loan model and tracker details together when relevant.",
       "Use EUR for Ireland cash-flow questions and INR for India/education-loan questions. Do not silently mix currencies.",
-      "When a number is missing, say it is missing rather than inventing it.",
+      "When a number is missing, say it is missing rather than inventing it. Never assume a credit-card purchase came from AIB cash: use the transaction account/source field and distinguish bank spending from credit-card spending.",
       "Be practical, concise, and explain calculations when useful.",
       "Format answers for a normal finance app user: do not use Markdown bold markers, headings with #, tables, or decorative symbols. Use short plain-text headings, short paragraphs, and simple bullet points using • when helpful.",
       "Keep answers easy to scan. Put the direct answer first, then the key numbers, then a short explanation or next step."
