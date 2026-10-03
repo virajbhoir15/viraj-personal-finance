@@ -129,8 +129,8 @@ function localAnswer(q){
 function parseQuickFinanceCommand(q){
  var d=getData(); if(!d)return {handled:false};
  var s=String(q||"").trim(), low=s.toLowerCase();
- var money=s.match(/(?:€|eur|euro|rs\.?|₹|inr)?\s*([0-9]{1,7}(?:[.,][0-9]{1,2})?)/i);
- var amount=money?Number(String(money[1]).replace(/,/g,"")):0;
+ var nums=Array.from(s.matchAll(/(?:€|eur|euro|rs\.?|₹|inr)?\s*([0-9]{1,7}(?:[.,][0-9]{1,2})?)/ig)).map(function(x){return Number(String(x[1]).replace(/,/g,""))}).filter(function(x){return !(x>=1900&&x<=2100);});
+ var amount=nums.length?nums[nums.length-1]:0;
  if(!amount)return {handled:false};
  var type=/\b(received|got paid|salary|income|refund|earned|credit(?:ed)?)\b/i.test(s)?"income":"expense";
  var category="Other";
