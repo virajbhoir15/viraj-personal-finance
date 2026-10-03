@@ -126,6 +126,58 @@ function localAnswer(q){
  return "I can already answer common questions from your stored finance data, but full free-form AI is not connected yet. Add your secure AI backend endpoint in Settings, then ask me anything such as “Can I afford €400?”, “How fast will I clear my education loan?”, “Where am I overspending?”, or “Can I save enough for my Mumbai flat?”";
 }
 
+function parseQuickFinanceCommand(q){
+ var d=getData(); if(!d)return {handled:false};
+ var s=String(q||"").trim(), low=s.toLowerCase();
+ var money=s.match(/(?:€|eur|euro|rs\.?|₹|inr)?\s*([0-9]{1,7}(?:[.,][0-9]{1,2})?)/i);
+ var amount=money?Number(String(money[1]).replace(/,/g,"")):0;
+ if(!amount)return {handled:false};
+ var type=/\b(received|got paid|salary|income|refund|earned|credit(?:ed)?)\b/i.test(s)?"income":"expense";
+ var category="Other";
+ if(type==="income"){if(/salary|payday|pay/i.test(low))category="Salary";else if(/refund/i.test(low))category="Refund";else category="Other";}
+ else if(/rent|landlord|house rent/i.test(low))category="Rent";
+ else if(/grocery|groceries|shopping|lidl|dunnes|aldi|tesco|supermarket|food shopping/i.test(low))category="Grocery";
+ else if(/bill|electric|electricity/i.test(low))category="Bills";
+ else if(/gym/i.test(low))category="Gym";
+ else if(/skin|skincare/i.test(low))category="Skincare";
+ else if(/mrcpi|exam/i.test(low))category="MRCPI";
+ else if(/donat/i.test(low))category="Donation";
+ else if(/family|mum|mom|mother|home/i.test(low))category="Family";
+
+ var date=new Date(), targetMonth=date.toISOString().slice(0,7);
+ var monthNames=["january","february","march","april","may","june","july","august","september","october","november","december"];
+ monthNames.forEach(function(name,i){if(low.indexOf(name)>-1||low.indexOf(name.slice(0,3))>-1){targetMonth=date.getFullYear()+"-"+String(i+1).padStart(2,"0");}});
+ var yearMatch=low.match(/\b(20\d{2})\b/);
+ if(yearMatch&&targetMonth){targetMonth=targetMonth.slice(0,5)+yearMatch[1].slice(0,4);}
+ var dateText=targetMonth+"-"+String(Math.min(date.getDate(),28)).padStart(2,"0");
+ if(/yesterday/i.test(low)){var y=new Date(date);y.setDate(y.getDate()-1);dateText=y.toISOString().slice(0,10);targetMonth=dateText.slice(0,7);}
+ if(/today|now/i.test(low)){dateText=date.toISOString().slice(0,10);targetMonth=dateText.slice(0,7);}
+
+ var accountId="";
+ if(/credit card|creditcard|avant|card/i.test(low))accountId="avant-card";
+ else if(/aib savings|savings/i.test(low))accountId="aib-savings";
+ else if(/aib|regular account|bank account/i.test(low))accountId="aib-regular";
+ else if(type==="income")accountId="aib-regular";
+ else accountId="aib-regular";
+
+ var m=d.months&&d.months[targetMonth];
+ if(!m){return {handled:false,reason:"I can add this only when "+targetMonth+" exists in your monthly tracker. Add that month first."};}
+ var desc=type==="income"?(category==="Salary"?"Salary":"Income"):category;
+ var tx={id:"ai-"+Date.now().toString(36),date:dateText,description:desc,amount:amount,currency:"EUR",type:type,category:category,accountId:accountId,notes:"Added via Finance AI"};
+ d.transactions=d.transactions||[];
+ d.transactions.push(tx);
+ m.actual=m.actual||{};
+ if(type==="expense")m.actual[category]=Number(m.actual[category]||0)+amount;
+ if(type==="income")m.income=Number(m.income||0)+amount;
+ var acc=(d.accounts||[]).find(function(a){return a.id===accountId});
+ if(acc){if(type==="expense")acc.balance=Number(acc.balance||0)+(acc.type==="Credit Card"?amount:-amount);else acc.balance=Number(acc.balance||0)+amount;}
+ if(accountId==="avant-card"){d.creditCard=d.creditCard||{};d.creditCard.balance=Number(acc?acc.balance:d.creditCard.balance||0);}
+ try{localStorage.setItem("virajFinance",JSON.stringify(d));}catch(e){}
+ window.data=d;
+ if(typeof window.show==="function")window.show("dashboard");
+ return {handled:true,type:type,amount:amount,category:category,date:dateText,month:targetMonth,account:acc?acc.name:"Unassigned"};
+}
+
 function loadHistory(){try{return JSON.parse(localStorage.getItem(KEY_HISTORY)||"[]")}catch(e){return []}}
 function saveHistory(h){localStorage.setItem(KEY_HISTORY,JSON.stringify(h.slice(-40)))}
 
@@ -153,6 +205,14 @@ async function ask(){
  var input=$("vAIInput"),btn=$("vAISend"),q=(input&&input.value||"").trim();
  if(!q)return;
  input.value=""; btn.disabled=true;
+ var quick=parseQuickFinanceCommand(q);
+ if(quick.handled){
+  var msg="Added to "+new Date(quick.date+"T00:00:00").toLocaleDateString("en-IE",{day:"2-digit",month:"short",year:"numeric"})+": "+(quick.type==="income"?"income":"expense")+" "+eur(quick.amount)+" · "+quick.category+" · "+quick.account+". Dashboard updated.";
+  var qh=loadHistory(); qh.push({role:"user",text:q},{role:"assistant",text:msg}); saveHistory(qh); renderChat(); btn.disabled=false; if(input)input.focus(); return;
+ }
+ if(quick.reason){
+  var rh=loadHistory(); rh.push({role:"user",text:q},{role:"assistant",text:quick.reason}); saveHistory(rh); renderChat(); btn.disabled=false; if(input)input.focus(); return;
+ }
  var h=loadHistory(); h.push({role:"user",text:q}); saveHistory(h); renderChat();
  var pending=$("vAIPending"); if(pending)pending.style.display="block";
  try{
@@ -191,7 +251,7 @@ function inject(){
  }
  var main=document.querySelector("main"); if(!main)return;
  var sec=document.createElement("section"); sec.id="ai"; sec.className="view";
- sec.innerHTML='<div id="vAISection"><div class="card hero"><h2 style="margin:0">🤖 Finance AI Copilot</h2><p class="muted">Ask questions using your actual finance data. The AI receives a compact snapshot of your balances, spending, goals and loan model.</p></div><div class="vaiLayout" style="margin-top:15px"><div class="card"><div class="sectionTitle"><h3>Ask anything about your money</h3><button onclick="vAIClear()">Clear chat</button></div><div id="vAIChat" class="vaiChat"></div><div class="vaiPending" id="vAIPending">Thinking about your numbers…</div><div class="vaiChips"><button class="vaiChip" onclick="vAIPrompt(this)">Can I afford €400?</button><button class="vaiChip" onclick="vAIPrompt(this)">How fast can I clear my education loan?</button><button class="vaiChip" onclick="vAIPrompt(this)">Where am I overspending?</button><button class="vaiChip" onclick="vAIPrompt(this)">How much can I safely spend?</button></div><div class="vaiComposer"><input id="vAIInput" placeholder="Ask anything about your finances…"><button id="vAISend" class="primary" onclick="vAIAsk()">Ask AI</button></div></div><div><div class="card"><h3>Live finance context</h3><div id="vAIStats"></div></div><div class="card" style="margin-top:15px"><h3>AI connection</h3><p class="muted small">For true free-form AI, point this app at the secure backend. Never put an OpenAI API key here.</p><div><label>AI backend URL</label><input id="vAIEndpoint" placeholder="https://your-worker.example.workers.dev"></div><div style="margin-top:9px"><label>Backend access token (optional)</label><input id="vAIToken" type="password" placeholder="Shared app token"></div><button class="primary" style="margin-top:10px" onclick="vAISaveConfig()">Save AI connection</button><div id="vAIConfigStatus" class="muted small" style="margin-top:8px"></div></div></div></div></div>';
+ sec.innerHTML='<div id="vAISection"><div class="card hero"><h2 style="margin:0">🤖 Finance AI Copilot</h2><p class="muted">Ask questions using your actual finance data. The AI receives a compact snapshot of your balances, spending, goals and loan model.</p></div><div class="vaiLayout" style="margin-top:15px"><div class="card"><div class="sectionTitle"><h3>Ask anything about your money</h3><button onclick="vAIClear()">Clear chat</button></div><div id="vAIChat" class="vaiChat"></div><div class="vaiPending" id="vAIPending">Thinking about your numbers…</div><div class="vaiChips"><button class="vaiChip" onclick="vAIPrompt(this)">Can I afford €400?</button><button class="vaiChip" onclick="vAIPrompt(this)">How fast can I clear my education loan?</button><button class="vaiChip" onclick="vAIPrompt(this)">Where am I overspending?</button><button class="vaiChip" onclick="vAIPrompt(this)">How much can I safely spend?</button></div><div class="vaiComposer"><input id="vAIInput" placeholder="Try: “I paid rent €650 today” or “Add €42 Lidl to October on credit card”…"><button id="vAISend" class="primary" onclick="vAIAsk()">Ask AI</button></div><div class="hint" style="margin-top:8px">Quick entry: Finance AI can add simple income or expenses directly to your ledger and refresh the dashboard. If you mention “credit card”, it uses Avant; otherwise expenses use AIB Regular Account.</div></div><div><div class="card"><h3>Live finance context</h3><div id="vAIStats"></div></div><div class="card" style="margin-top:15px"><h3>AI connection</h3><p class="muted small">For true free-form AI, point this app at the secure backend. Never put an OpenAI API key here.</p><div><label>AI backend URL</label><input id="vAIEndpoint" placeholder="https://your-worker.example.workers.dev"></div><div style="margin-top:9px"><label>Backend access token (optional)</label><input id="vAIToken" type="password" placeholder="Shared app token"></div><button class="primary" style="margin-top:10px" onclick="vAISaveConfig()">Save AI connection</button><div id="vAIConfigStatus" class="muted small" style="margin-top:8px"></div></div></div></div></div>';
  main.appendChild(sec);
  var settings=document.getElementById("settings");
  if(settings){
