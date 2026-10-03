@@ -205,7 +205,7 @@
     var rows=(data.transactions||[]).slice().sort(function(a,b){return String(b.date).localeCompare(String(a.date));}).map(function(t){
       var sign=t.type==='income'?'+':'-';
       var cls=t.type==='income'?'v5good':t.type==='expense'?'v5bad':'';
-      return '<tr><td>'+esc(t.date)+'</td><td>'+esc(t.description)+'</td><td>'+esc(t.category)+'</td><td>'+esc(t.currency)+'</td><td class="'+cls+'">'+sign+(t.currency==='INR'?inr(t.amount):eur(t.amount))+'</td><td><button class="danger" onclick="v5DeleteTransaction(\''+t.id+'\')">Delete</button></td></tr>';
+      return '<tr><td>'+esc(t.date)+'</td><td>'+esc(t.description)+'</td><td>'+esc(t.category)+'</td><td>'+esc(t.currency)+'</td><td class="'+cls+'">'+sign+(t.currency==='INR'?inr(t.amount):eur(t.amount))+'</td><td><button onclick="v5EditTransaction(\''+t.id+'\')">Edit</button> <button class="danger" onclick="v5DeleteTransaction(\''+t.id+'\')">Delete</button></td></tr>';
     }).join('');
     by('v5TxTable').innerHTML=rows?'<table class="v5table"><tr><th>Date</th><th>Description</th><th>Category</th><th>Currency</th><th>Amount</th><th></th></tr>'+rows+'</table>':'<div class="note">No transactions yet. Use the form above to add one.</div>';
   }
@@ -218,7 +218,21 @@
     saveData();renderTransactions();renderAccounts();renderDashboard();
     by('v5txAmount').value='';by('v5txDesc').value='';by('v5txNotes').value='';
   };
-  window.v5DeleteTransaction=function(id){
+  window.v5EditTransaction=function(id){
+ var t=data.transactions.find(function(x){return x.id===id});if(!t)return;
+ var a=data.accounts.find(function(x){return x.id===t.accountId});
+ var oldAmount=t.amount,oldType=t.type;
+ var desc=prompt("Description",t.description);if(desc===null)return;
+ var amount=prompt("Amount",t.amount);if(amount===null)return;
+ var cat=prompt("Category",t.category||"Other");if(cat===null)return;
+ var notes=prompt("Notes",t.notes||"");if(notes===null)return;
+ amount=n(amount);if(amount<=0)return alert("Amount must be greater than zero.");
+ if(a&&t.currency===a.currency&&t.type!=="transfer")a.balance += t.type==="income" ? -oldAmount : oldAmount;
+ t.description=desc.trim()||t.description;t.amount=amount;t.category=cat.trim()||"Other";t.notes=notes.trim();
+ if(a&&t.currency===a.currency&&t.type!=="transfer")a.balance += t.type==="income" ? amount : -amount;
+ saveData();renderTransactions();renderAccounts();renderDashboard();
+};
+window.v5DeleteTransaction=function(id){
     var t=data.transactions.find(function(x){return x.id===id});if(!t)return;
     if(!confirm('Delete this transaction and reverse its effect on the linked account balance?'))return;
     var a=data.accounts.find(function(x){return x.id===t.accountId});
