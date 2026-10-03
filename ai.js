@@ -95,8 +95,7 @@ function snapshot(){
   emergencyReserveEUR:1000,
   homeTargetINR:20000000,
   budgetAlerts:budgetAlerts,
-  creditCardDueDays:(function(){var cd=d.creditCard||{};if(!cd.dueDate)return null;return Math.ceil((new Date(cd.dueDate+"T23:59:59").getTime()-Date.now())/86400000);})(),
-  creditCardDueDays:(function(){var cd=d.creditCard||{};if(!cd.dueDate)return null;var ms=new Date(cd.dueDate+"T23:59:59").getTime()-Date.now();return Math.ceil(ms/86400000)})()
+  creditCardDueDays:(function(){var cd=d.creditCard||{};if(!cd.dueDate)return null;return Math.ceil((new Date(cd.dueDate+"T23:59:59").getTime()-Date.now())/86400000);})()
  };
 }
 function localAnswer(q){
