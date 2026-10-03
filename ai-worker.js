@@ -1,7 +1,6 @@
 /*
  Viraj Personal Finance Centre - free AI backend
  Uses Cloudflare Workers AI, so no OpenAI API key or paid OpenAI credits are required.
- Cloudflare currently provides a free Workers AI allocation of 10,000 Neurons/day.
 */
 const ALLOWED_ORIGIN = "https://virajbhoir15.github.io";
 const MODEL = "@cf/google/gemma-4-26b-a4b-it";
@@ -21,10 +20,7 @@ function corsHeaders(origin, request) {
 function json(body, status, origin, request) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: Object.assign(
-      {"Content-Type": "application/json; charset=utf-8"},
-      corsHeaders(origin, request)
-    )
+    headers: Object.assign({"Content-Type": "application/json; charset=utf-8"}, corsHeaders(origin, request))
   });
 }
 
@@ -33,12 +29,34 @@ function compactFinance(f) {
 }
 
 function extractAnswer(result) {
-  if (typeof result === "string") return result;
-  if (result && typeof result.response === "string") return result.response;
-  if (result && result.result && typeof result.result.response === "string") return result.result.response;
-  if (result && Array.isArray(result.response)) {
-    return result.response.map(x => typeof x === "string" ? x : (x && (x.text || x.content || ""))).join("").trim();
+  if (!result) return "";
+  if (typeof result === "string") return result.trim();
+
+  if (typeof result.response === "string") return result.response.trim();
+
+  if (result.result && typeof result.result.response === "string") {
+    return result.result.response.trim();
   }
+
+  if (result.choices && result.choices[0] && result.choices[0].message) {
+    const content = result.choices[0].message.content;
+    if (typeof content === "string") return content.trim();
+    if (Array.isArray(content)) {
+      return content.map(x => typeof x === "string" ? x : (x && (x.text || x.content || ""))).join("").trim();
+    }
+  }
+
+  if (Array.isArray(result.response)) {
+    return result.response.map(x => {
+      if (typeof x === "string") return x;
+      return x && (x.text || x.content || x.response || "");
+    }).join("").trim();
+  }
+
+  if (result.output_text && typeof result.output_text === "string") {
+    return result.output_text.trim();
+  }
+
   return "";
 }
 
@@ -111,23 +129,33 @@ export default {
       "If the user asks for current external rates, laws, tax rules, products or market data, say that live external research is needed rather than pretending the private snapshot contains it."
     ].join("\n");
 
-    const prompt = instructions +
-      "\n\nPRIVATE FINANCE SNAPSHOT:\n" + finance +
-      "\n\nRECENT CHAT:\n" + historyText +
-      "\n\nUSER QUESTION:\n" + question;
-
     try {
       const result = await env.AI.run(MODEL, {
         messages: [
           {role: "system", content: instructions},
-          {role: "user", content: "PRIVATE FINANCE SNAPSHOT:\n" + finance + "\n\nRECENT CHAT:\n" + historyText + "\n\nUSER QUESTION:\n" + question}
+          {
+            role: "user",
+            content: "PRIVATE FINANCE SNAPSHOT:\n" + finance +
+              "\n\nRECENT CHAT:\n" + historyText +
+              "\n\nUSER QUESTION:\n" + question
+          }
         ],
         chat_template_kwargs: {enable_thinking: false}
       });
 
       const answer = extractAnswer(result);
+
+      if (!answer) {
+        return json({
+          error: "Workers AI returned no readable text.",
+          provider: "cloudflare-workers-ai",
+          model: MODEL,
+          responseShape: result && typeof result === "object" ? Object.keys(result) : typeof result
+        }, 502, origin, request);
+      }
+
       return json({
-        answer: answer || "No text answer was returned.",
+        answer,
         provider: "cloudflare-workers-ai",
         model: MODEL
       }, 200, origin, request);
