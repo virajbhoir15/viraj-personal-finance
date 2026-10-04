@@ -238,6 +238,7 @@
     if(["dashboard","budget","reports","loan","settings","ai"].indexOf(id)>=0){
       window.__view=id;
       if(legacyShow)legacyShow(id);
+      if(id==="reports")navActive("insights");
       postRender();
     } else {
       window.__view="dashboard";
