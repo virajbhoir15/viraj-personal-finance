@@ -3,17 +3,16 @@
 var $=function(id){return document.getElementById(id)};
 var state={connected:false,email:""};
 function status(t,ok){var s=$("v7AuthStatus");if(s){s.textContent=t;s.className=ok?"v7auth good":"v7auth"}}
-var st=document.createElement("style");st.textContent=".v7auth{margin-top:12px;padding:10px;border-radius:10px;background:#f8fafc;color:#475467;font-size:12px}.v7auth.good{background:#ecfdf3;color:#166534}.v7authGrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}@media(max-width:650px){.v7authGrid{grid-template-columns:1fr}}";document.head.appendChild(st);
+var st=document.createElement("style");st.textContent=".v7auth{margin-top:12px;padding:10px;border-radius:10px;background:#f8fafc;color:#475467;font-size:12px}.v7auth.good{background:#ecfdf3;color:#166534}.v7authGrid{display:grid;grid-template-columns:1fr;gap:12px;margin-top:12px}";document.head.appendChild(st);
 
 function addLoginUI(){
  var gate=$("loginGate");if(!gate)return;
  var card=gate.querySelector(".loginCard");if(!card||$("googleSignInBtn"))return;
  var b=document.createElement("div");b.className="v7authGrid";
- b.innerHTML='<button id="googleSignInBtn" class="primary" type="button">Continue with Google</button><button id="legacySignInBtn" type="button">Use app password</button>';
+ b.innerHTML='<button id="googleSignInBtn" class="primary" type="button">Continue with Google</button>';
  card.appendChild(b);
  var note=document.createElement("div");note.id="v7AuthStatus";note.className="v7auth";note.textContent="Google sign-in uses the Google account connected to this finance app. No Google password is entered here.";card.appendChild(note);
  $("googleSignInBtn").onclick=googleLogin;
- $("legacySignInBtn").onclick=function(){var u=$("loginUser"),p=$("loginPass");if(u)u.focus();if(p)p.style.display="block";status("Legacy browser app-lock remains available.",false)};
 }
 
 async function googleLogin(){
