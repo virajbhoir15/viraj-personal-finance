@@ -19,7 +19,7 @@
     return spendable-recurring-1000;
   }
 
-  var CSS='
+  var CSS=`
     .uxSettingsTop{border:1px solid #e1e5ec;background:#fff;color:#4d586b;border-radius:9px;padding:8px 10px;font-weight:800}
     .uxRestoredTools{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
     .uxTool{border:1px solid #e4e8f0;background:#fff;border-radius:11px;padding:13px}
@@ -71,7 +71,7 @@
       .uxTool{padding:11px}
       .uxTool strong{font-size:15px}
     }
-  ';
+  `;
   if(!el("virajResponsiveRestoredStyle")){
     var st=document.createElement("style");st.id="virajResponsiveRestoredStyle";st.textContent=CSS;document.head.appendChild(st);
   }
