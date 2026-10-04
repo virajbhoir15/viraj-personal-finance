@@ -199,9 +199,43 @@
       el("uxGoalSave").onclick=function(){try{window.financeCore.addTransaction({type:"goal",amount:n(el("uxGoalAmt").value),date:el("uxGoalDate").value,goalId:g.id,accountId:el("uxGoalAcc").value,currency:g.currency,description:"Goal contribution"});back.remove();}catch(e){alert(e.message);}};
       return;
     }
-    body+='<div class="uxField"><label>Goal name</label><input id="uxNewGoalName"></div><div class="uxGrid2"><div class="uxField"><label>Target</label><input id="uxNewGoalTarget" type="number"></div><div class="uxField"><label>Currency</label><select id="uxNewGoalCur"><option>EUR</option><option>INR</option></select></div></div><div class="uxGrid2"><div class="uxField"><label>Current</label><input id="uxNewGoalCurrent" type="number" value="0"></div><div class="uxField"><label>Target date</label><input id="uxNewGoalDate" type="date"></div></div><button class="uxSave" id="uxNewGoalSave">Save goal</button>';
+    body+='<div class="uxField"><label>What are you saving for?</label><input id="uxNewGoalName" placeholder="e.g. MacBook, holiday, car deposit"></div>'+
+      '<div class="uxGrid2"><div class="uxField"><label>Total amount</label><input id="uxNewGoalTarget" type="number" step=".01" placeholder="How much do you need?"></div><div class="uxField"><label>Currency</label><select id="uxNewGoalCur"><option>EUR</option><option>INR</option></select></div></div>'+
+      '<div class="uxGrid2"><div class="uxField"><label>Already saved</label><input id="uxNewGoalCurrent" type="number" step=".01" value="0"></div><div class="uxField"><label>When do you need it?</label><input id="uxNewGoalDate" type="date"></div></div>'+
+      '<div class="uxPlanCard" style="margin:12px 0;background:#f8fafc"><div class="uxMuted">Your saving plan</div><div class="big" id="uxGoalMonthly">Enter a target and date</div><div class="uxMuted" id="uxGoalCalcText">We will calculate how much you need to save each month.</div></div>'+
+      '<div class="uxField"><label>Optional: what can you save each month?</label><input id="uxNewGoalMonthly" type="number" step=".01" value="0" placeholder="e.g. 250"></div>'+
+      '<button class="uxSave" id="uxNewGoalSave">Create goal & plan</button>';
+    function updateGoalCalc(){
+      var target=n(el("uxNewGoalTarget").value),current=n(el("uxNewGoalCurrent").value),dateVal=el("uxNewGoalDate").value,monthly=n(el("uxNewGoalMonthly").value),cur=el("uxNewGoalCur").value;
+      var remaining=Math.max(0,target-current),monthsNeeded=0,required=0,projected="";
+      if(dateVal){
+        var targetDate=new Date(dateVal+"T00:00:00"),today=new Date();today.setHours(0,0,0,0);
+        monthsNeeded=Math.max(1,(targetDate.getFullYear()-today.getFullYear())*12+(targetDate.getMonth()-today.getMonth()));
+        required=remaining/monthsNeeded;
+      }
+      if(monthly>0&&remaining>0){
+        var monthsAt=Math.ceil(remaining/monthly),dt=new Date();dt.setMonth(dt.getMonth()+monthsAt);
+        projected=dt.toLocaleDateString("en-IE",{month:"short",year:"numeric"});
+      }
+      var symbol=cur==="EUR"?"€":"₹";
+      var formatted=required>0?symbol+required.toLocaleString(cur==="EUR"?"en-IE":"en-IN",{minimumFractionDigits:cur==="EUR"?2:0,maximumFractionDigits:cur==="EUR"?2:0})+"/month":"Enter a target date";
+      el("uxGoalMonthly").textContent=target>0?formatted:"Enter a target and date";
+      el("uxGoalCalcText").textContent=remaining<=0?"Goal is already fully funded.":required>0?symbol+remaining.toLocaleString(cur==="EUR"?"en-IE":"en-IN",{minimumFractionDigits:cur==="EUR"?2:0,maximumFractionDigits:cur==="EUR"?2:0})+" remaining over "+monthsNeeded+" months."+ (projected?" At "+symbol+monthly.toLocaleString(cur==="EUR"?"en-IE":"en-IN")+" / month, estimated finish: "+projected+".":""):"Choose when you need the money to see the monthly plan.";
+    }
     var b2=openOverlay("uxNewGoalOverlay",body);
-    el("uxNewGoalSave").onclick=function(){var name=el("uxNewGoalName").value.trim();if(!name)return alert("Enter a goal name.");d.goals=d.goals||[];d.goals.push({id:"goal-"+Date.now().toString(36),name:name,target:n(el("uxNewGoalTarget").value),current:n(el("uxNewGoalCurrent").value),currency:el("uxNewGoalCur").value,monthlyContribution:0,targetDate:el("uxNewGoalDate").value});try{localStorage.setItem("virajFinance",JSON.stringify(d));if(window.driveSync)window.driveSync.markDirty();}catch(e){}b2.remove();if(window.toast)window.toast("Goal saved");showView("plans");};
+    ["uxNewGoalTarget","uxNewGoalCurrent","uxNewGoalDate","uxNewGoalMonthly","uxNewGoalCur"].forEach(function(id){var x=el(id);if(x)x.addEventListener("input",updateGoalCalc);});
+    updateGoalCalc();
+    el("uxNewGoalSave").onclick=function(){
+      var name=el("uxNewGoalName").value.trim(),target=n(el("uxNewGoalTarget").value),current=n(el("uxNewGoalCurrent").value),monthly=n(el("uxNewGoalMonthly").value),dateVal=el("uxNewGoalDate").value,cur=el("uxNewGoalCur").value;
+      if(!name)return alert("Enter a goal name.");
+      if(target<=0)return alert("Enter the total amount you need.");
+      if(current>target)return alert("Already saved cannot be greater than the target.");
+      if(!dateVal)return alert("Choose when you need the money.");
+      d.goals=d.goals||[];
+      d.goals.push({id:"goal-"+Date.now().toString(36),name:name,target:target,current:current,currency:cur,monthlyContribution:monthly,targetDate:dateVal});
+      try{localStorage.setItem("virajFinance",JSON.stringify(d));if(window.driveSync)window.driveSync.markDirty();}catch(e){}
+      b2.remove();if(window.toast)window.toast("Goal and saving plan created");showView("plans");
+    };
   }
 
 
@@ -273,16 +307,17 @@
 
   function decorateBudget() {
     var hero=document.querySelector("#pfContent .heroRow .actions");
-    if(hero&&!hero.querySelector("[data-ux-add-type]"))hero.insertAdjacentHTML("afterbegin",'<button data-ux-add-type="expense">+ Expense</button>');
+    if(hero){
+      if(!hero.querySelector('[data-ux-add-type="income"]'))hero.insertAdjacentHTML("afterbegin",'<button data-ux-add-type="income">+ Salary</button>');
+      if(!hero.querySelector('[data-ux-add-type="expense"]'))hero.insertAdjacentHTML("afterbegin",'<button data-ux-add-type="expense">+ Expense</button>');
+    }
     document.querySelectorAll("#pfContent table tbody tr").forEach(function(row){
       if(row.querySelector("[data-ux-del-category]"))return;
-      var name=row.cells[0]&&row.cells[0].childNodes[0]&&row.cells[0].childNodes[0].textContent?row.cells[0].childNodes[0].textContent.trim():row.cells[0]&&row.cells[0].textContent.trim();
-      if(!name)return;
+      var cell=row.cells[0];if(!cell)return;
+      var b=cell.querySelector("b"),name=(b?b.textContent:cell.textContent||"").trim();if(!name)return;
       var mk=window.__budgetMonth||((window.data&&Object.keys(window.data.months||{}).sort().slice(-1)[0])||"");
       var actual=Number(window.data&&window.data.months&&window.data.months[mk]&&window.data.months[mk].actual&&window.data.months[mk].actual[name]||0);
-      var btn=document.createElement("button");btn.className="rowBtn dangerBtn";btn.textContent="Remove";btn.dataset.uxDelCategory=name;btn.dataset.uxDelCategoryMonth=mk;btn.title=actual?"Recorded spending exists":"Remove this category";
-      if(actual>0)btn.disabled=true;
-      row.cells[0].appendChild(btn);
+      var btn=document.createElement("button");btn.className="rowBtn dangerBtn";btn.textContent="Remove";btn.dataset.uxDelCategory=name;btn.dataset.uxDelCategoryMonth=mk;btn.disabled=actual>0;btn.title=actual?"Recorded spending exists":"Remove this category";cell.appendChild(btn);
     });
   }
 
