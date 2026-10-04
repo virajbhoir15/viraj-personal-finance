@@ -1,6 +1,5 @@
 /*
- Viraj Personal Finance Centre - free AI backend
- Uses Cloudflare Workers AI, so no OpenAI API key or paid OpenAI credits are required.
+ Viraj Personal Finance Centre - AI backend + Google Finance FX proxy
 */
 const ALLOWED_ORIGIN = "https://virajbhoir15.github.io";
 const MODEL = "@cf/google/gemma-4-26b-a4b-it";
@@ -11,16 +10,20 @@ function corsHeaders(origin, request) {
   return {
     "Access-Control-Allow-Origin": allowed && origin ? origin : ALLOWED_ORIGIN,
     "Access-Control-Allow-Headers": requestedHeaders || "Content-Type, X-Viraj-App-Token",
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
     "Access-Control-Max-Age": "86400",
     "Vary": "Origin"
   };
 }
 
-function json(body, status, origin, request) {
+function json(body, status, origin, request, extraHeaders) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: Object.assign({"Content-Type": "application/json; charset=utf-8"}, corsHeaders(origin, request))
+    headers: Object.assign(
+      {"Content-Type":"application/json; charset=utf-8"},
+      corsHeaders(origin, request),
+      extraHeaders || {}
+    )
   });
 }
 
@@ -31,13 +34,8 @@ function compactFinance(f) {
 function extractAnswer(result) {
   if (!result) return "";
   if (typeof result === "string") return result.trim();
-
   if (typeof result.response === "string") return result.response.trim();
-
-  if (result.result && typeof result.result.response === "string") {
-    return result.result.response.trim();
-  }
-
+  if (result.result && typeof result.result.response === "string") return result.result.response.trim();
   if (result.choices && result.choices[0] && result.choices[0].message) {
     const content = result.choices[0].message.content;
     if (typeof content === "string") return content.trim();
@@ -45,19 +43,48 @@ function extractAnswer(result) {
       return content.map(x => typeof x === "string" ? x : (x && (x.text || x.content || ""))).join("").trim();
     }
   }
-
   if (Array.isArray(result.response)) {
-    return result.response.map(x => {
-      if (typeof x === "string") return x;
-      return x && (x.text || x.content || x.response || "");
-    }).join("").trim();
+    return result.response.map(x => typeof x === "string" ? x : (x && (x.text || x.content || ""))).join("").trim();
   }
-
-  if (result.output_text && typeof result.output_text === "string") {
-    return result.output_text.trim();
-  }
-
+  if (result.output_text && typeof result.output_text === "string") return result.output_text.trim();
   return "";
+}
+
+async function googleFxQuote() {
+  const url = "https://www.google.com/finance/quote/EUR-INR?hl=en&gl=ie";
+  const r = await fetch(url, {
+    headers: {
+      "User-Agent": "Mozilla/5.0 (compatible; VirajFinance/1.0; +https://virajbhoir15.github.io/viraj-personal-finance/)",
+      "Accept": "text/html,application/xhtml+xml"
+    },
+    cf: { cacheTtl: 60, cacheEverything: true }
+  });
+  if (!r.ok) throw new Error("Google Finance HTTP " + r.status);
+  const html = await r.text();
+
+  const selectors = [
+    /class="[^"]*YMlKec[^"]*fxKbKc[^"]*"[^>]*>\s*([0-9,]+(?:\.[0-9]+)?)/i,
+    /class="[^"]*kf1m0[^"]*"[^>]*>\s*<div class="[^"]*YMlKec[^"]*fxKbKc[^"]*"[^>]*>\s*([0-9,]+(?:\.[0-9]+)?)/i,
+    /EUR\s*\/\s*INR[\s\S]{0,5000}?([0-9]{2,3}(?:\.[0-9]{2,6}))/i
+  ];
+  let match = null;
+  for (const re of selectors) {
+    match = html.match(re);
+    if (match && match[1]) break;
+  }
+  if (!match || !match[1]) throw new Error("Google Finance quote element not found");
+
+  const rate = Number(match[1].replace(/,/g,""));
+  if (!Number.isFinite(rate) || rate <= 0) throw new Error("Invalid Google Finance rate");
+
+  return {
+    ok:true,
+    pair:"EUR-INR",
+    rate,
+    date:new Date().toISOString().slice(0,10),
+    source:"Google Finance",
+    url
+  };
 }
 
 export default {
@@ -65,35 +92,48 @@ export default {
     const origin = request.headers.get("Origin") || "";
 
     if (request.method === "OPTIONS") {
-      return new Response(null, {status: 204, headers: corsHeaders(origin, request)});
+      return new Response(null, {status:204, headers:corsHeaders(origin, request)});
+    }
+
+    const url = new URL(request.url);
+
+    if (request.method === "GET" && url.pathname.replace(/\/$/,"") === "/fx/google") {
+      try {
+        const q = await googleFxQuote();
+        return json(q,200,origin,request,{
+          "Cache-Control":"public, max-age=60, s-maxage=60"
+        });
+      } catch (e) {
+        return json({ok:false,error:String(e && e.message || e)},502,origin,request);
+      }
     }
 
     if (request.method === "GET") {
       return json({
-        ok: true,
-        service: "viraj-finance-ai",
-        provider: "cloudflare-workers-ai",
-        model: MODEL,
-        configured: !!env.AI
-      }, 200, origin, request);
+        ok:true,
+        service:"viraj-finance-ai",
+        provider:"cloudflare-workers-ai",
+        model:MODEL,
+        configured:!!env.AI
+      },200,origin,request);
     }
 
     if (request.method !== "POST") {
-      return json({error: "POST only"}, 405, origin, request);
+      return json({error:"POST only"},405,origin,request);
     }
 
     if (origin && origin !== ALLOWED_ORIGIN && !origin.startsWith("http://localhost:")) {
-      return json({error: "Origin not allowed"}, 403, origin, request);
+      return json({error:"Origin not allowed"},403,origin,request);
     }
 
     if (!env.AI) {
-      return json({error: "Cloudflare Workers AI binding is not configured on this Worker."}, 500, origin, request);
+      return json({error:"Cloudflare Workers AI binding is not configured on this Worker."},500,origin,request);
     }
 
     if (env.AI_SHARED_TOKEN) {
       const got = request.headers.get("X-Viraj-App-Token") || "";
       if (got !== env.AI_SHARED_TOKEN) {
-        return json({error: "Unauthorized"}, 401, origin, request);
+        return json({error:"Unauthorized"},401,origin,request);
       }
     }
 
@@ -101,20 +141,15 @@ export default {
     try {
       body = await request.json();
     } catch (e) {
-      return json({error: "Invalid JSON"}, 400, origin, request);
+      return json({error:"Invalid JSON"},400,origin,request);
     }
 
     const question = String(body.question || "").trim();
-    if (!question) {
-      return json({error: "Question is required"}, 400, origin, request);
-    }
+    if (!question) return json({error:"Question is required"},400,origin,request);
 
     const finance = compactFinance(body.finance);
     const history = Array.isArray(body.history) ? body.history.slice(-12) : [];
-    const historyText = history
-      .map(x => String(x.role || "user") + ": " + String(x.text || ""))
-      .join("\n")
-      .slice(-8000);
+    const historyText = history.map(x => String(x.role || "user")+": "+String(x.text || "")).join("\n").slice(-8000);
 
     const instructions = [
       "You are Viraj's private personal finance copilot.",
@@ -123,7 +158,7 @@ export default {
       "When a number is missing, say it is missing rather than inventing it. Never assume a credit-card purchase came from AIB cash: use the transaction account/source field and distinguish bank spending from credit-card spending.",
       "Be practical, concise, and explain calculations when useful.",
       "Format answers for a normal finance app user: do not use Markdown bold markers, headings with #, tables, or decorative symbols. Use short plain-text headings, short paragraphs, and simple bullet points using • when helpful.",
-      "Keep answers easy to scan. Put the direct answer first, then the key numbers, then a short explanation or next step."
+      "Keep answers easy to scan. Put the direct answer first, then the key numbers, then a short explanation or next step.",
       "For affordability, consider actual spendable EUR, recurring commitments and the €1,000 emergency reserve shown in the snapshot.",
       "For education-loan questions, distinguish the app's planning model from an official lender payoff quote.",
       "Do not claim to execute bank transfers, change loans, or access live accounts.",
@@ -134,37 +169,24 @@ export default {
     try {
       const result = await env.AI.run(MODEL, {
         messages: [
-          {role: "system", content: instructions},
-          {
-            role: "user",
-            content: "PRIVATE FINANCE SNAPSHOT:\n" + finance +
-              "\n\nRECENT CHAT:\n" + historyText +
-              "\n\nUSER QUESTION:\n" + question
-          }
+          {role:"system",content:instructions},
+          {role:"user",content:"PRIVATE FINANCE SNAPSHOT:\n"+finance+"\n\nRECENT CHAT:\n"+historyText+"\n\nUSER QUESTION:\n"+question}
         ],
-        chat_template_kwargs: {enable_thinking: false}
+        chat_template_kwargs:{enable_thinking:false}
       });
 
       const answer = extractAnswer(result);
-
       if (!answer) {
         return json({
-          error: "Workers AI returned no readable text.",
-          provider: "cloudflare-workers-ai",
-          model: MODEL,
-          responseShape: result && typeof result === "object" ? Object.keys(result) : typeof result
-        }, 502, origin, request);
+          error:"Workers AI returned no readable text.",
+          provider:"cloudflare-workers-ai",
+          model:MODEL,
+          responseShape:result && typeof result==="object"?Object.keys(result):typeof result
+        },502,origin,request);
       }
-
-      return json({
-        answer,
-        provider: "cloudflare-workers-ai",
-        model: MODEL
-      }, 200, origin, request);
+      return json({answer,provider:"cloudflare-workers-ai",model:MODEL},200,origin,request);
     } catch (e) {
-      return json({
-        error: "Cloudflare Workers AI error: " + String(e && e.message || e)
-      }, 502, origin, request);
+      return json({error:"Cloudflare Workers AI error: "+String(e && e.message || e)},502,origin,request);
     }
   }
 };
