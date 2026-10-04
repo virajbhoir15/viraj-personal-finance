@@ -51,40 +51,70 @@ function extractAnswer(result) {
 }
 
 async function googleFxQuote() {
-  const url = "https://www.google.com/finance/quote/EUR-INR?hl=en&gl=ie";
-  const r = await fetch(url, {
-    headers: {
-      "User-Agent": "Mozilla/5.0 (compatible; VirajFinance/1.0; +https://virajbhoir15.github.io/viraj-personal-finance/)",
-      "Accept": "text/html,application/xhtml+xml"
-    },
-    cf: { cacheTtl: 60, cacheEverything: true }
-  });
-  if (!r.ok) throw new Error("Google Finance HTTP " + r.status);
-  const html = await r.text();
-
-  const selectors = [
-    /class="[^"]*YMlKec[^"]*fxKbKc[^"]*"[^>]*>\s*([0-9,]+(?:\.[0-9]+)?)/i,
-    /class="[^"]*kf1m0[^"]*"[^>]*>\s*<div class="[^"]*YMlKec[^"]*fxKbKc[^"]*"[^>]*>\s*([0-9,]+(?:\.[0-9]+)?)/i,
-    /EUR\s*\/\s*INR[\s\S]{0,5000}?([0-9]{2,3}(?:\.[0-9]{2,6}))/i
+  const urls = [
+    "https://www.google.com/finance/quote/EUR-INR?hl=en&gl=ie",
+    "https://www.google.com/finance/quote/EUR-INR"
   ];
-  let match = null;
-  for (const re of selectors) {
-    match = html.match(re);
-    if (match && match[1]) break;
+  let lastError = null;
+  for (const url of urls) {
+    try {
+      const r = await fetch(url, {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (compatible; VirajFinance/1.0; +https://virajbhoir15.github.io/viraj-personal-finance/)",
+          "Accept": "text/html,application/xhtml+xml"
+        },
+        cf: { cacheTtl: 60, cacheEverything: true }
+      });
+      if (!r.ok) throw new Error("Google Finance HTTP " + r.status);
+      const html = await r.text();
+
+      const markerPatterns = [
+        /EUR\\s*\\/\\s*INR/gi,
+        /Euro\\s*\\/\\s*Indian\\s*Rupee/gi
+      ];
+      const candidates = [];
+      for (const re of markerPatterns) {
+        for (const m of html.matchAll(re)) {
+          const start = Math.max(0, (m.index || 0) - 1000);
+          const end = Math.min(html.length, (m.index || 0) + 16000);
+          const context = html.slice(start, end);
+          const nums = context.match(/\\b(?:10[0-9]|11[0-9])\\.[0-9]{4,6}\\b/g) || [];
+          for (const raw of nums) {
+            const value = Number(raw);
+            if (Number.isFinite(value) && value >= 100 && value <= 120) {
+              candidates.push({ value, distance: Math.abs((m.index || 0) - (start + context.indexOf(raw))) });
+            }
+          }
+        }
+      }
+
+      const classMatches = html.match(/class="[^"]*(?:YMlKec|fxKbKc)[^"]*"[^>]*>\\s*([0-9]{2,3}\\.[0-9]{4,6})/gi) || [];
+      for (const chunk of classMatches) {
+        const m = chunk.match(/([0-9]{2,3}\\.[0-9]{4,6})/);
+        if (m) {
+          const value = Number(m[1]);
+          if (Number.isFinite(value) && value >= 100 && value <= 120) {
+            candidates.push({ value, distance: 999999 });
+          }
+        }
+      }
+
+      if (!candidates.length) throw new Error("Google Finance EUR/INR quote not found");
+      candidates.sort((a,b) => a.distance - b.distance);
+      const rate = candidates[0].value;
+      return {
+        ok: true,
+        pair: "EUR-INR",
+        rate,
+        date: new Date().toISOString().slice(0,10),
+        source: "Google Finance",
+        url
+      };
+    } catch (e) {
+      lastError = e;
+    }
   }
-  if (!match || !match[1]) throw new Error("Google Finance quote element not found");
-
-  const rate = Number(match[1].replace(/,/g,""));
-  if (!Number.isFinite(rate) || rate <= 0) throw new Error("Invalid Google Finance rate");
-
-  return {
-    ok:true,
-    pair:"EUR-INR",
-    rate,
-    date:new Date().toISOString().slice(0,10),
-    source:"Google Finance",
-    url
-  };
+  throw lastError || new Error("Google Finance quote unavailable");
 }
 
 export default {
