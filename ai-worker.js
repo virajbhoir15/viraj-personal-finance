@@ -163,7 +163,7 @@ export default {
       "For education-loan questions, distinguish the app's planning model from an official lender payoff quote.",
       "Do not claim to execute bank transfers, change loans, or access live accounts.",
       "This is financial planning support, not regulated financial advice.",
-      "If the user asks for current external rates, laws, tax rules, products or market data, say that live external research is needed rather than pretending the private snapshot contains it."
+      "The finance snapshot may include liveFxEurInr. If the user asks for the current EUR/INR rate and liveFxEurInr is present, answer directly from that field and state its source/date. Do not replace it with the older fxEurInr reference field and do not say external research is needed when liveFxEurInr is present. If liveFxEurInr is absent, then say a live external lookup is needed. For other current external rates, laws, tax rules, products or market data, say that live external research is needed rather than pretending the private snapshot contains it."
     ].join("\n");
 
     try {
