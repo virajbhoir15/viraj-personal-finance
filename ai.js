@@ -12,7 +12,7 @@ function inr(n){return "₹"+Number(n||0).toLocaleString("en-IN",{maximumFractio
 function num(n){return Number(n||0);}
 function sumObj(o){return Object.values(o||{}).reduce(function(a,b){return a+num(b)},0);}
 
-function getData(){try{return typeof data!=="undefined"?data:null}catch(e){return null}}
+function getData(){return window.data||null}
 function recentMonths(){
  var d=getData(); if(!d||!d.months)return [];
  return Object.keys(d.months).sort().map(function(k){return {key:k,label:d.months[k].label,income:num(d.months[k].income),spend:sumObj(d.months[k].actual||{})}});
