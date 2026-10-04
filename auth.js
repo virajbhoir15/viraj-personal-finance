@@ -27,6 +27,7 @@ async function googleLogin(){
   var gate=$("loginGate");if(gate)gate.style.display="none";
   status("Google account connected.",true);
   if(typeof toast==="function")toast("Google account connected");
+  if(window.driveSync&&typeof window.driveSync.start==="function")window.driveSync.start(false);
  }catch(e){status(e.message||"Google sign-in failed.",false);alert(e.message||"Google sign-in failed.");}
  finally{if(btn)btn.disabled=false}
 }
@@ -36,7 +37,7 @@ function hasGoogleSession(){try{return sessionStorage.getItem("virajGoogleSessio
 function init(){
  addLoginUI();
  var gate=$("loginGate");
- if(hasGoogleSession()){state.connected=true;if(gate)gate.style.display="none"}
+ if(hasGoogleSession()){state.connected=true;if(gate)gate.style.display="none";setTimeout(function(){if(window.driveSync&&typeof window.driveSync.start==="function")window.driveSync.start(false)},300)}
  var top=document.querySelector(".top>div:last-child");
  if(top&&!$("v7AccountBtn")){
   var b=document.createElement("button");b.id="v7AccountBtn";b.textContent="Google account";b.onclick=function(){googleLogin()};top.insertBefore(b,top.firstChild);
