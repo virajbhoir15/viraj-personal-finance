@@ -7,6 +7,40 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Viraj Finance">
+<style id="viraj-native-mobile-style">
+/* Hard mobile-app layer: applies to Android/iOS touch devices even when the browser reports a wide CSS viewport. */
+html.pf-native-mobile,html.pf-native-mobile body{width:100%!important;min-width:0!important;overflow-x:hidden!important;background:#f4f6fb!important}
+html.pf-native-mobile body{padding-bottom:96px!important;-webkit-tap-highlight-color:transparent}
+html.pf-native-mobile .sidebar{display:none!important}
+html.pf-native-mobile .main{margin-left:0!important;width:100%!important;min-width:0!important}
+html.pf-native-mobile .topbar{height:64px!important;padding:8px 12px!important;position:sticky!important;top:0!important;z-index:70!important;background:rgba(255,255,255,.96)!important;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+html.pf-native-mobile .crumb{display:none!important}
+html.pf-native-mobile .topbar h1{font-size:18px!important;margin:0!important;display:flex;align-items:center;gap:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+html.pf-native-mobile .topActions{gap:5px!important}
+html.pf-native-mobile .topActions .iconBtn{display:none!important}
+html.pf-native-mobile .uxTopSearch .uxSearch{display:none!important}
+html.pf-native-mobile .uxAIButton{padding:8px 9px!important;font-size:11px!important;border-radius:10px!important}
+html.pf-native-mobile .content{width:100%!important;max-width:none!important;padding:14px 12px 108px!important}
+html.pf-native-mobile .heroRow{display:flex!important;flex-direction:column!important;align-items:flex-start!important;gap:9px!important}
+html.pf-native-mobile .statsGrid{grid-template-columns:1fr 1fr!important;gap:8px!important}
+html.pf-native-mobile .dashboardGrid,html.pf-native-mobile .dashboardGrid.lower,html.pf-native-mobile .reportGrid,html.pf-native-mobile .planningGrid{grid-template-columns:1fr!important;gap:10px!important}
+html.pf-native-mobile .panel,html.pf-native-mobile .view .card,html.pf-native-mobile .stat{border-radius:15px!important;box-shadow:0 3px 14px rgba(23,32,51,.07)!important}
+html.pf-native-mobile .mobileNav{display:grid!important;position:fixed!important;left:0!important;right:0!important;bottom:0!important;height:calc(84px + env(safe-area-inset-bottom))!important;padding:7px 8px calc(8px + env(safe-area-inset-bottom))!important;grid-template-columns:repeat(5,1fr)!important;background:rgba(255,255,255,.98)!important;border-top:1px solid #e0e5ee!important;box-shadow:0 -10px 28px rgba(23,32,51,.12)!important;backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);z-index:100!important}
+html.pf-native-mobile .mobileNav button{min-height:62px!important;border:0!important;background:transparent!important;border-radius:14px!important;padding:3px 2px!important;display:flex!important;align-items:center!important;justify-content:center!important;flex-direction:column!important;gap:3px!important;color:#64748b!important;font-weight:900!important}
+html.pf-native-mobile .mobileNav button .pfNavIcon{width:38px!important;height:38px!important;border-radius:12px!important;display:grid!important;place-items:center!important}
+html.pf-native-mobile .mobileNav button .pfNavIcon svg{width:23px!important;height:23px!important}
+html.pf-native-mobile .mobileNav button .pfBottomLabel{font-size:11px!important;font-weight:900!important;line-height:1!important}
+html.pf-native-mobile .mobileNav button.active .pfBottomLabel{font-size:11.5px!important;color:#172033!important}
+html.pf-native-mobile .mobileNav button.active .pfNavIcon{transform:translateY(-3px);box-shadow:0 8px 18px rgba(23,32,51,.12)}
+html.pf-native-mobile .uxAdd{width:56px!important;height:56px!important;right:14px!important;bottom:calc(92px + env(safe-area-inset-bottom))!important;padding:0!important;border-radius:50%!important;font-size:0!important;display:grid!important;place-items:center!important;z-index:101!important}
+html.pf-native-mobile .uxAdd:before{content:"+";font-size:28px;line-height:1;font-weight:400}
+html.pf-native-mobile input,html.pf-native-mobile select,html.pf-native-mobile button{font-size:16px}
+html.pf-native-mobile .virajFxGrid{grid-template-columns:1fr!important}
+html.pf-native-mobile .fxHistoryHead{flex-direction:column!important;align-items:flex-start!important}
+html.pf-native-mobile .fxRangeTabs{width:100%!important;display:grid!important;grid-template-columns:repeat(3,1fr)!important}
+html.pf-native-mobile .fxRangeTabs button{min-height:38px!important}
+html.pf-native-mobile .virajFxChart{height:220px!important}
+</style>
 <title>Viraj Personal Finance Centre</title>
 <meta name="theme-color" content="#3157d5">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
@@ -37,7 +71,77 @@
 <script src="live-fx.js?v=3"></script>
 <script src="auth.js" defer></script>
 <script src="ai.js?v=13" defer></script>
-<script src="app-polish.js?v=5"></script>
+<script src="app-polish.js?v=6"></script>
+<script>
+(function(){
+  var ua=navigator.userAgent||"";
+  var isMobile=/Android|iPhone|iPad|iPod|Mobile/i.test(ua) || (navigator.maxTouchPoints>1 && Math.min(screen.width,screen.height)<1000);
+  if(!isMobile)return;
+  document.documentElement.classList.add("pf-native-mobile");
+
+  function navIcon(label){
+    var paths={
+      Home:'M3 10.5 12 3l9 7.5v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z',
+      Money:'M4 6h16v12H4z M7 9h10 M7 13h6',
+      Budget:'M4 19V5 M4 19h16 M8 16v-4 M12 16V8 M16 16v-6',
+      Plans:'M12 3 14.8 8.7 21 9.6 16.5 14l1 6.2-5.5-2.9-5.5 2.9 1-6.2L3 9.6l6.2-.9z',
+      Loan:'M3 10 12 4l9 6v8H3z M8 21v-6h8v6 M8 10h8'
+    };
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="'+paths[label]+'"></path></svg>';
+  }
+  var cfg=[
+    ["dashboard","Home","linear-gradient(135deg,#3157d5,#6d5dfc)","#eaf0ff","#3157d5"],
+    ["money","Money","linear-gradient(135deg,#0f9f6e,#35c99b)","#e9fbf4","#0f9f6e"],
+    ["budget","Budget","linear-gradient(135deg,#d97706,#f4b342)","#fff4dc","#d27b00"],
+    ["plans","Plans","linear-gradient(135deg,#7a42d8,#a978ff)","#f2ebff","#7a42d8"],
+    ["loan","Loan","linear-gradient(135deg,#0b879c,#29b9cf)","#e8f8fb","#10869b"]
+  ];
+  function decorateNav(){
+    var n=document.querySelector(".mobileNav");
+    if(!n||n.dataset.nativeReady==="1") {
+      if(n) n.querySelectorAll("[data-nav]").forEach(function(b){b.classList.toggle("active",(window.__view||"dashboard")===b.dataset.nav);});
+      return;
+    }
+    n.innerHTML=cfg.map(function(x){
+      return '<button type="button" data-nav="'+x[0]+'"><span class="pfNavIcon" style="background:'+x[3]+';color:'+x[4]+'">'+navIcon(x[1])+'</span><span class="pfBottomLabel">'+x[1]+'</span></button>';
+    }).join("");
+    n.dataset.nativeReady="1";
+    updateActive();
+  }
+  function updateActive(){
+    var n=document.querySelector(".mobileNav");if(!n)return;
+    var id=window.__view||"dashboard";
+    n.querySelectorAll("[data-nav]").forEach(function(b){
+      var active=b.dataset.nav===id;
+      b.classList.toggle("active",active);
+      var icon=b.querySelector(".pfNavIcon");
+      if(icon){
+        var item=cfg.find(function(x){return x[0]===b.dataset.nav});
+        icon.style.background=active?item[2]:item[3];
+        icon.style.color=active?"#fff":item[4];
+      }
+    });
+  }
+  function boot(){
+    decorateNav();updateActive();
+    var n=document.querySelector(".mobileNav");
+    if(n&&!n.__nativeObserver){
+      n.__nativeObserver=new MutationObserver(function(){
+        if(n.dataset.nativeBusy==="1")return;
+        if(!n.querySelector(".pfNavIcon")){n.dataset.nativeReady="";decorateNav();}
+        updateActive();
+      });
+      n.__nativeObserver.observe(n,{childList:true,subtree:true});
+    }
+  }
+  setTimeout(boot,80);
+  setTimeout(boot,400);
+  setTimeout(boot,1000);
+  document.addEventListener("click",function(e){
+    if(e.target.closest(".mobileNav [data-nav]"))setTimeout(updateActive,80);
+  },false);
+})();
+</script>
 <script>
 function logout(){
   try{
