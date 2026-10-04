@@ -12,7 +12,7 @@ var range="1Y",busy=false,series={};
 
 function N(v){var n=Number(v);return isFinite(n)?n:0}
 function money(v,cur){return (cur==="EUR"?"€":"₹")+N(v).toLocaleString(cur==="EUR"?"en-IE":"en-IN",{minimumFractionDigits:cur==="EUR"?2:0,maximumFractionDigits:cur==="EUR"?2:0})}
-function esc(v){return String(v==null?"":v).replace(/[&<>"]/g,function(m){return{"&":"&amp;","<":"&lt;",">":"&gt;",""":"&quot;"}[m]})}
+function esc(v){return String(v==null?"":v).replace(/[&<>"]/g,function(m){return{"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[m]})}
 function iso(d){return d.toISOString().slice(0,10)}
 function css(){
  if(document.getElementById("virajFxCSS"))return;
