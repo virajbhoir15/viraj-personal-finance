@@ -30,7 +30,7 @@
     .uxHistoryTable td,.uxHistoryTable th{padding:9px 8px}
     .uxHistoryTable tr:last-child td{border-bottom:0}
     @media(max-width:900px){.uxRestoredTools{grid-template-columns:1fr 1fr}}
-    @media(max-width:1100px){
+    .pfBottomIcon{width:22px;height:22px;display:block}.pfBottomIcon path,.pfBottomIcon circle,.pfBottomIcon rect,.pfBottomIcon polyline,.pfBottomIcon line{vector-effect:non-scaling-stroke}.pfBottomLabel{display:block;font-size:11px;font-weight:900;line-height:1.1;margin-top:4px}.mobileNav button{position:relative;min-height:58px;flex-direction:column;gap:0;color:#697386}.mobileNav button .pfNavIcon{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;margin-top:2px;transition:transform .15s ease,box-shadow .15s ease}.mobileNav button[data-nav="dashboard"] .pfNavIcon{background:#eaf0ff;color:#3157d5}.mobileNav button[data-nav="money"] .pfNavIcon{background:#e9fbf4;color:#0f9f6e}.mobileNav button[data-nav="budget"] .pfNavIcon{background:#fff4dc;color:#d27b00}.mobileNav button[data-nav="plans"] .pfNavIcon{background:#f2ebff;color:#7a42d8}.mobileNav button[data-nav="loan"] .pfNavIcon{background:#e8f8fb;color:#10869b}.mobileNav button.active{background:transparent;color:#172033}.mobileNav button.active .pfNavIcon{transform:translateY(-3px);box-shadow:0 8px 18px #17203318}.mobileNav button.active .pfBottomLabel{color:#172033}.mobileNav:after{content:"";position:absolute;left:12%;right:12%;bottom:1px;height:3px;border-radius:99px;background:linear-gradient(90deg,#3157d5,#8b5cf6,#0ea5e9,#10b981,#f59e0b);opacity:.75}.pfNavIcon svg{width:20px;height:20px;display:block}.pfBottomBarTitle{display:none}\n    @media(max-width:1100px){
       body{font-size:13px;padding-bottom:72px}
       .sidebar{display:none!important}
       .main{margin-left:0!important;width:100%!important}
@@ -156,11 +156,30 @@
     var hero=content.querySelector(".heroRow");if(hero)hero.parentNode.insertBefore(g,hero.nextSibling);else content.insertBefore(g,content.firstChild);
   }
 
+
+  function decorateBottomNav(){
+    var mobile=document.querySelector(".mobileNav");
+    if(!mobile)return;
+    var items=[
+      ["dashboard","Home",'M3 10.5 12 3l9 7.5v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z'],
+      ["money","Money",'M4 6h16v12H4z M7 9h5 M7 13h4 M16 9h1'],
+      ["budget","Budget",'M4 19V5 M4 19h16 M8 16v-4 M12 16V8 M16 16V10'],
+      ["plans","Plans",'M12 3 14.8 8.7 21 9.6 16.5 14l1 6.2-5.5-2.9-5.5 2.9 1-6.2L3 9.6l6.2-.9z'],
+      ["loan","Loan",'M3 10 12 4l9 6v8H3z M8 21v-6h8v6 M8 10h8']
+    ];
+    mobile.innerHTML=items.map(function(x){
+      return '<button type="button" data-nav="'+x[0]+'"><span class="pfNavIcon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+x[2].split(" M").map(function(p,i){return (i?"<path d=\"M"+p+"\"></path>":"<path d=\""+p+"\"></path>");}).join("")+'</svg></span><span class="pfBottomLabel">'+x[1]+'</span></button>';
+    }).join("");
+    var active=window.__view||"dashboard";
+    mobile.querySelectorAll("[data-nav]").forEach(function(b){b.classList.toggle("active",b.dataset.nav===active);});
+  }
+
   var previousShow=window.show;
   window.show=function(id){
     var r=previousShow?previousShow.apply(this,arguments):null;
     setTimeout(function(){
       ensureSettings();
+      decorateBottomNav();
       decorateTitles();
       addDashboardTools();
       addMoneyHistory();
@@ -181,6 +200,7 @@
 
   function boot(){
     ensureSettings();
+    decorateBottomNav();
     decorateTitles();
     addDashboardTools();
     addMoneyHistory();
