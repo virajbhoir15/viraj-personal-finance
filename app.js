@@ -118,11 +118,101 @@ function goalsView(){
  $("pfContent").innerHTML='<div class="heroRow"><div><div class="eyebrow">SAVINGS & MILESTONES</div><h2>Goals</h2><p>Keep the few goals that matter visible and measurable.</p></div><button class="primary" data-action="addGoal">+ Add goal</button></div><div class="goalGrid">'+cards+'</div>'+card("Key plans",'<div class="statsGrid compact">'+stat("AIB Savings",E((data.accounts.find(function(a){return a.name==="AIB Savings"})||{}).balance||0),"Excluded from safe-to-spend")+stat("Monthly saving","€100","Current plan")+stat("Emergency fund",E((data.goals.find(function(g){return g.name==="Emergency Fund"})||{}).current||0),"of €5,000 target")+stat("Mumbai home","₹2 Cr","Long-term target")+'</div>');
 }
 function loanView(){
- var x=loanModel(),l=data.loan,scheduledInterest=1346159,scheduledPayoff="2035-05-11";
- var payments=[100000,125000,150000,175000,200000];
- var scenarioRows=payments.map(function(p){var s=loanModel(p);return '<tr><td>'+R(p)+'</td><td>'+s.rows.length+'</td><td>'+dateText(s.payoff)+'</td><td>'+R(s.interest)+'</td><td>'+R(Math.max(0,scheduledInterest-s.interest))+'</td></tr>'}).join("");
- var rows=x.rows.slice(0,24).map(function(r){return '<tr><td>'+r.n+'</td><td>'+dateText(r.date)+'</td><td>'+R(r.payment)+'</td><td>'+R(r.interest)+'</td><td>'+R(r.principal)+'</td><td>'+R(r.closing)+'</td></tr>'}).join("");
- $("pfContent").innerHTML='<div class="heroRow"><div><div class="eyebrow">DEBT PLAN</div><h2>Education Loan</h2><p>Calculator using your ₹25,66,709 opening balance and current ₹1,00,000 monthly plan.</p></div><button class="primary" data-action="editLoan">Edit calculator</button></div><div class="loanSummary"><div><span>Opening balance</span><strong>'+R(l.opening)+'</strong></div><div><span>Monthly payment</span><strong>'+R(l.payment)+'</strong></div><div><span>Modelled interest</span><strong>'+R(x.interest)+'</strong></div><div><span>Projected payoff</span><strong>'+dateText(x.payoff)+'</strong></div></div>'+card("Loan plan comparison",'<div class="loanFacts"><div><span>First payment</span><b>'+dateText(l.start)+'</b></div><div><span>Monthly rate</span><b>'+N(l.rate).toFixed(3)+'%</b></div><div><span>Lender scheduled payoff</span><b>'+dateText(scheduledPayoff)+'</b></div><div><span>Modelled interest saved</span><b>'+R(Math.max(0,scheduledInterest-x.interest))+'</b></div></div><p class="hint">Lender schedule future interest used for comparison: ₹13,46,159. This app model is not a lender payoff quote; actual daily accrual, payment timing and fees can change the result.</p>')+card("Payment scenario calculator",'<div class="tableWrap"><table><thead><tr><th>Monthly payment</th><th>Payments</th><th>Projected payoff</th><th>Modelled interest</th><th>Interest saved</th></tr></thead><tbody>'+scenarioRows+'</tbody></table></div>')+card("Repayment schedule",'<div class="tableWrap"><table><thead><tr><th>#</th><th>Date</th><th>Payment</th><th>Interest</th><th>Principal</th><th>Closing</th></tr></thead><tbody>'+rows+'</tbody></table></div><p class="hint">First 24 modelled payments shown. Use Edit calculator to test your own monthly payment.</p>');
+ var l=data.loan||{opening:2566709,payment:100000,rate:.875,start:"2026-10-11"};
+ var lenderInterest=1346159,lenderPayoff="2035-05-11",lenderPeriods=107,baseFirstInterest=17967;
+ var opening=N(l.opening),payment=N(l.payment)||100000,rate=N(l.rate)||.875,startDate=l.start||"2026-10-11";
+
+ function calcModel(o,part,pay,monthlyRate,start){
+  o=Math.max(0,N(o));part=Math.min(o,Math.max(0,N(part)));pay=Math.max(0,N(pay));monthlyRate=Math.max(0,N(monthlyRate))/100;
+  var b=Math.max(0,o-part),int=0,n=0,dt=new Date((start||"2026-10-11")+"T00:00:00"),rows=[],stalled=false;
+  if(b<=.01)return {opening:o,part:part,balance:b,payment:pay,interest:0,totalPaid:0,payments:0,payoff:"",rows:rows,stalled:false};
+  while(b>.01&&n<240){
+    var it=n===0?(o?baseFirstInterest*(b/o):0):b*monthlyRate;
+    var p=Math.min(pay,b+it),pr=Math.max(0,p-it);
+    if(pr<=.000001){stalled=true;break;}
+    b=Math.max(0,b-pr);int+=it;n++;
+    rows.push({n:n,date:dt.toISOString().slice(0,10),opening:(b+pr),payment:p,interest:it,principal:pr,closing:b});
+    dt.setMonth(dt.getMonth()+1);
+  }
+  return {opening:o,part:part,balance:b,payment:pay,interest:int,totalPaid:rows.reduce(function(s,r){return s+r.payment},0),payments:n,payoff:rows.length?rows[rows.length-1].date:"",rows:rows,stalled:stalled||n>=240&&b>.01};
+ }
+
+ $("pfContent").innerHTML=
+ '<div class="heroRow"><div><div class="eyebrow">DEBT PLAN · LIVE CALCULATOR</div><h2>Education Loan</h2><p>Test any part-payment and any monthly payment to see the complete projected repayment plan.</p></div><div class="actions"><button id="loanSavePlan" class="primary">Save monthly plan</button></div></div>'+
+ '<section class="panel loanCalcPanel"><div class="panelHead"><div><h2>Build your repayment plan</h2><span class="uxMuted">The calculation updates instantly as you type.</span></div><span class="badge">PLANNING MODEL</span></div>'+
+ '<div class="loanCalcGrid">'+
+ '<label>Current balance ₹<input id="loanCalcOpening" type="number" step="1" value="'+opening+'"><small>Starting balance for this scenario</small></label>'+
+ '<label>Pay now / part-payment ₹<input id="loanCalcPart" type="number" step="1" value="0"><small>One-time payment before the next scheduled EMI</small></label>'+
+ '<label>Monthly payment after that ₹<input id="loanCalcPayment" type="number" step="1" value="'+payment+'"><small>Enter any amount</small></label>'+
+ '<label>Monthly interest %<input id="loanCalcRate" type="number" step=".001" value="'+rate+'"><small>Modelled monthly rate</small></label>'+
+ '<label>First EMI date<input id="loanCalcDate" type="date" value="'+esc(startDate)+'"><small>Schedule start date</small></label>'+
+ '</div>'+
+ '<div class="loanQuick"><span>Quick payment</span><button data-loan-payment="50000">₹50k</button><button data-loan-payment="75000">₹75k</button><button data-loan-payment="100000">₹1L</button><button data-loan-payment="125000">₹1.25L</button><button data-loan-payment="150000">₹1.5L</button><button data-loan-payment="200000">₹2L</button></div>'+
+ '<div id="loanCalcWarning" class="loanWarning" style="display:none"></div></section>'+
+ '<div class="loanSummary" id="loanLiveSummary"></div>'+
+ card("Plan outcome",'<div class="loanOutcomeGrid">'+
+ '<div><span>Balance after part-payment</span><strong id="loanOutBalance">—</strong></div>'+
+ '<div><span>Projected payoff</span><strong id="loanOutPayoff">—</strong></div>'+
+ '<div><span>Total modelled interest</span><strong id="loanOutInterest">—</strong></div>'+
+ '<div><span>Total payments</span><strong id="loanOutPaid">—</strong></div>'+
+ '<div><span>Interest saved vs lender schedule</span><strong id="loanOutSaved" class="positive">—</strong></div>'+
+ '<div><span>Payment periods saved</span><strong id="loanOutPeriods" class="positive">—</strong></div>'+
+ '</div><p class="hint">Lender comparison: scheduled future interest ₹13,46,159 and scheduled final due date 11 May 2035. The calculator is a planning model, not a lender payoff quote.</p>')+
+ card("Complete repayment schedule",'<div class="tableWrap"><table><thead><tr><th>#</th><th>Date</th><th>Opening</th><th>Payment</th><th>Interest</th><th>Principal</th><th>Closing</th></tr></thead><tbody id="loanScheduleBody"></tbody></table></div><p class="hint" id="loanScheduleNote"></p>')+
+ card("Compare different monthly payments",'<div class="tableWrap"><table><thead><tr><th>Monthly payment</th><th>Payments</th><th>Projected payoff</th><th>Interest</th><th>Interest saved</th></tr></thead><tbody id="loanScenarioBody"></tbody></table></div>');
+
+ function readInputs(){
+  return {
+   opening:Math.max(0,N($("loanCalcOpening").value)),
+   part:Math.max(0,N($("loanCalcPart").value)),
+   payment:Math.max(0,N($("loanCalcPayment").value)),
+   rate:Math.max(0,N($("loanCalcRate").value)),
+   start:$("loanCalcDate").value||"2026-10-11"
+  };
+ }
+ function update(){
+  var q=readInputs(),x=calcModel(q.opening,q.part,q.payment,q.rate,q.start);
+  $("loanOutBalance").textContent=R(x.balance);
+  $("loanOutPayoff").textContent=x.payoff?dateText(x.payoff):"—";
+  $("loanOutInterest").textContent=R(x.interest);
+  $("loanOutPaid").textContent=R(x.totalPaid);
+  $("loanOutSaved").textContent=R(Math.max(0,lenderInterest-x.interest));
+  $("loanOutPeriods").textContent=(x.payments?Math.max(0,lenderPeriods-x.payments):0)+" periods";
+  $("loanLiveSummary").innerHTML=
+   '<div><span>Scenario opening</span><strong>'+R(q.opening)+'</strong></div>'+
+   '<div><span>Part-payment now</span><strong>'+R(Math.min(q.part,q.opening))+'</strong></div>'+
+   '<div><span>Monthly payment</span><strong>'+R(q.payment)+'</strong></div>'+
+   '<div><span>Modelled rate</span><strong>'+q.rate.toFixed(3)+'%</strong></div>';
+  var warn=$("loanCalcWarning");
+  if(x.stalled){
+   warn.style.display="block";
+   warn.textContent="This monthly payment is too low to reduce the balance under the current interest assumption. Increase the payment amount to produce a payoff schedule.";
+  }else{
+   warn.style.display="none";warn.textContent="";
+  }
+  $("loanScheduleBody").innerHTML=x.rows.map(function(r){
+   return '<tr><td>'+r.n+'</td><td>'+dateText(r.date)+'</td><td>'+R(r.opening)+'</td><td>'+R(r.payment)+'</td><td>'+R(r.interest)+'</td><td>'+R(r.principal)+'</td><td>'+R(r.closing)+'</td></tr>';
+  }).join("")||'<tr><td colspan="7">Enter a payment above to generate the schedule.</td></tr>';
+  $("loanScheduleNote").textContent=x.rows.length?(x.rows.length+" payment periods shown — the complete modelled schedule is displayed."): "No amortising schedule is available for the current payment.";
+  var scenario=[50000,75000,100000,125000,150000,175000,200000];
+  $("loanScenarioBody").innerHTML=scenario.map(function(p){
+    var s=calcModel(q.opening,q.part,p,q.rate,q.start);
+    return '<tr><td>'+R(p)+'</td><td>'+s.payments+(s.stalled?" · >20y":"")+'</td><td>'+dateText(s.payoff)+'</td><td>'+R(s.interest)+'</td><td>'+R(Math.max(0,lenderInterest-s.interest))+'</td></tr>';
+  }).join("");
+ }
+ ["loanCalcOpening","loanCalcPart","loanCalcPayment","loanCalcRate","loanCalcDate"].forEach(function(id){
+  $(id).addEventListener("input",update);$(id).addEventListener("change",update);
+ });
+ document.querySelectorAll("[data-loan-payment]").forEach(function(b){
+  b.onclick=function(){ $("loanCalcPayment").value=b.dataset.loanPayment; update(); };
+ });
+ $("loanSavePlan").onclick=function(){
+  var q=readInputs();
+  data.loan={opening:q.opening,payment:q.payment,rate:q.rate,start:q.start};
+  save("Monthly loan plan saved");
+  update();
+ };
+ update();
 }
 
 function reportsView(){
