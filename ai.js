@@ -132,15 +132,12 @@ function pendingFinance(){
 function parseQuickFinanceCommand(q){
  var d=getData(); if(!d)return {handled:false};
  var s=String(q||"").trim(), low=s.toLowerCase();
- var nums=Array.from(s.matchAll(/(?:€|eur|euro|rs\.?|₹|inr)?\s*([0-9]{1,7}(?:[.,][0-9]{1,2})?)/ig))
+ var nums=Array.from(s.matchAll(/(?:€|eur|euro|rs\.?|₹|inr)?\s*([0-9]{1,3}(?:,[0-9]{2,3})*(?:\.[0-9]{1,2})?|[0-9]+(?:\.[0-9]{1,2})?)/ig))
    .map(function(x){return Number(String(x[1]).replace(/,/g,""))})
    .filter(function(x){return !(x>=1900&&x<=2100);});
  var amount=nums.length?nums[nums.length-1]:0;
  var intent=/\b(paid|pay|spent|spend|bought|buy|shopping|purchase|rent|salary|received|receive|got paid|income|refund|earned|add|added|expense|grocery|groceries|bill|bills|donation|donated|gym|skincare|mrcpi|family)\b/i.test(s);
- if(!amount){
-   if(intent)return {handled:false,needsAmount:true,prompt:"How much was it? You can reply with just the amount, for example “650”."};
-   return {handled:false};
- }
+ if(!amount && !intent)return {handled:false};
  var type=/\b(received|got paid|salary|income|refund|earned|credited|credit)\b/i.test(s)?"income":"expense";
  var currency=/₹|inr\b|\brs\.?/i.test(s)?"INR":"EUR";
  var category="Other";
@@ -171,6 +168,10 @@ function parseQuickFinanceCommand(q){
    else if(/aib savings|savings/i.test(low))accountId="aib-savings";
    else if(/aib|regular account|bank account/i.test(low))accountId="aib-regular";
    else if(type==="income")accountId="aib-regular";
+ }
+ if(!amount){
+   if(!m)return {handled:false,needsAmount:true,reason:"That month is not in your tracker yet. Add the month first, then tell me the amount.",type:type,category:category,currency:currency,date:dateText,accountId:accountId};
+   return {handled:false,needsAmount:true,prompt:"How much was it? You can reply with just the amount, for example “650”.",type:type,category:category,currency:currency,date:dateText,accountId:accountId,description:category};
  }
  var m=d.months&&d.months[targetMonth];
  if(!m)return {handled:false,reason:"I can add this only when "+targetMonth+" exists in your monthly tracker. Add that month first."};
@@ -217,7 +218,7 @@ async function ask(){
  input.value=""; if(btn)btn.disabled=true;
 
  var pendingTx=pendingFinance();
- var looksLikeAmount=/^(?:€|eur|euro|rs\.?|₹|inr)?\s*[0-9]+(?:[.,][0-9]{1,2})?\s*$/i.test(q);
+ var looksLikeAmount=/^(?:€|eur|euro|rs\.?|₹|inr)?\s*(?:[0-9]{1,3}(?:,[0-9]{2,3})*(?:\.[0-9]{1,2})?|[0-9]+(?:\.[0-9]{1,2})?)\s*$/i.test(q);
  if(pendingTx&&looksLikeAmount){
    pendingTx.amount=num(q.replace(/[^\d.,]/g,"").replace(/,/g,""));
    if(pendingTx.amount>0){
