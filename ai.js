@@ -126,15 +126,25 @@ function localAnswer(q){
  return "I can already answer common questions from your stored finance data, but full free-form AI is not connected yet. Add your secure AI backend endpoint in Settings, then ask me anything such as “Can I afford €400?”, “How fast will I clear my education loan?”, “Where am I overspending?”, or “Can I save enough for my Mumbai flat?”";
 }
 
+function pendingFinance(){
+ try{return JSON.parse(localStorage.getItem("virajPendingFinance")||"null")}catch(e){return null}
+}
 function parseQuickFinanceCommand(q){
  var d=getData(); if(!d)return {handled:false};
  var s=String(q||"").trim(), low=s.toLowerCase();
- var nums=Array.from(s.matchAll(/(?:€|eur|euro|rs\.?|₹|inr)?\s*([0-9]{1,7}(?:[.,][0-9]{1,2})?)/ig)).map(function(x){return Number(String(x[1]).replace(/,/g,""))}).filter(function(x){return !(x>=1900&&x<=2100);});
+ var nums=Array.from(s.matchAll(/(?:€|eur|euro|rs\.?|₹|inr)?\s*([0-9]{1,7}(?:[.,][0-9]{1,2})?)/ig))
+   .map(function(x){return Number(String(x[1]).replace(/,/g,""))})
+   .filter(function(x){return !(x>=1900&&x<=2100);});
  var amount=nums.length?nums[nums.length-1]:0;
- if(!amount)return {handled:false};
- var type=/\b(received|got paid|salary|income|refund|earned|credit(?:ed)?)\b/i.test(s)?"income":"expense";
+ var intent=/\b(paid|pay|spent|spend|bought|buy|shopping|purchase|rent|salary|received|receive|got paid|income|refund|earned|add|added|expense|grocery|groceries|bill|bills|donation|donated|gym|skincare|mrcpi|family)\b/i.test(s);
+ if(!amount){
+   if(intent)return {handled:false,needsAmount:true,prompt:"How much was it? You can reply with just the amount, for example “650”."};
+   return {handled:false};
+ }
+ var type=/\b(received|got paid|salary|income|refund|earned|credited|credit)\b/i.test(s)?"income":"expense";
+ var currency=/₹|inr\b|\brs\.?/i.test(s)?"INR":"EUR";
  var category="Other";
- if(type==="income"){if(/salary|payday|pay/i.test(low))category="Salary";else if(/refund/i.test(low))category="Refund";else category="Other";}
+ if(type==="income"){if(/salary|payday|pay\b/i.test(low))category="Salary";else if(/refund/i.test(low))category="Refund";}
  else if(/rent|landlord|house rent/i.test(low))category="Rent";
  else if(/grocery|groceries|shopping|lidl|dunnes|aldi|tesco|supermarket|food shopping/i.test(low))category="Grocery";
  else if(/bill|electric|electricity/i.test(low))category="Bills";
@@ -142,40 +152,40 @@ function parseQuickFinanceCommand(q){
  else if(/skin|skincare/i.test(low))category="Skincare";
  else if(/mrcpi|exam/i.test(low))category="MRCPI";
  else if(/donat/i.test(low))category="Donation";
- else if(/family|mum|mom|mother|home/i.test(low))category="Family";
+ else if(/family|mum|mom|mother/i.test(low))category="Family";
 
- var date=new Date(), targetMonth=date.toISOString().slice(0,7);
+ var date=new Date(), targetMonth=date.toISOString().slice(0,7), explicitMonth=false;
  var monthNames=["january","february","march","april","may","june","july","august","september","october","november","december"];
- monthNames.forEach(function(name,i){if(low.indexOf(name)>-1||low.indexOf(name.slice(0,3))>-1){targetMonth=date.getFullYear()+"-"+String(i+1).padStart(2,"0");}});
+ monthNames.forEach(function(name,i){
+   if(low.indexOf(name)>-1||low.indexOf(name.slice(0,3))>-1){targetMonth=date.getFullYear()+"-"+String(i+1).padStart(2,"0");explicitMonth=true;}
+ });
  var yearMatch=low.match(/\b(20\d{2})\b/);
- if(yearMatch&&targetMonth){targetMonth=targetMonth.slice(0,5)+yearMatch[1].slice(0,4);}
+ if(yearMatch&&explicitMonth)targetMonth=yearMatch[1]+"-"+targetMonth.slice(5);
  var dateText=targetMonth+"-"+String(Math.min(date.getDate(),28)).padStart(2,"0");
  if(/yesterday/i.test(low)){var y=new Date(date);y.setDate(y.getDate()-1);dateText=y.toISOString().slice(0,10);targetMonth=dateText.slice(0,7);}
- if(/today|now/i.test(low)){dateText=date.toISOString().slice(0,10);targetMonth=dateText.slice(0,7);}
-
+ else if(/today|now/i.test(low)){dateText=date.toISOString().slice(0,10);targetMonth=dateText.slice(0,7);}
+ else if(explicitMonth&&targetMonth!==date.toISOString().slice(0,7))dateText=targetMonth+"-01";
  var accountId="";
- if(/credit card|creditcard|avant|card/i.test(low))accountId="avant-card";
- else if(/aib savings|savings/i.test(low))accountId="aib-savings";
- else if(/aib|regular account|bank account/i.test(low))accountId="aib-regular";
- else if(type==="income")accountId="aib-regular";
- else accountId="aib-regular";
-
+ if(currency==="EUR"){
+   if(/credit card|creditcard|avant|card/i.test(low))accountId="avant-card";
+   else if(/aib savings|savings/i.test(low))accountId="aib-savings";
+   else if(/aib|regular account|bank account/i.test(low))accountId="aib-regular";
+   else if(type==="income")accountId="aib-regular";
+ }
  var m=d.months&&d.months[targetMonth];
- if(!m){return {handled:false,reason:"I can add this only when "+targetMonth+" exists in your monthly tracker. Add that month first."};}
- var desc=type==="income"?(category==="Salary"?"Salary":"Income"):category;
- var tx={id:"ai-"+Date.now().toString(36),date:dateText,description:desc,amount:amount,currency:"EUR",type:type,category:category,accountId:accountId,notes:"Added via Finance AI"};
- d.transactions=d.transactions||[];
- d.transactions.push(tx);
- m.actual=m.actual||{};
- if(type==="expense")m.actual[category]=Number(m.actual[category]||0)+amount;
- if(type==="income")m.income=Number(m.income||0)+amount;
- var acc=(d.accounts||[]).find(function(a){return a.id===accountId});
- if(acc){if(type==="expense")acc.balance=Number(acc.balance||0)+(acc.type==="Credit Card"?amount:-amount);else acc.balance=Number(acc.balance||0)+amount;}
- if(accountId==="avant-card"){d.creditCard=d.creditCard||{};d.creditCard.balance=Number(acc?acc.balance:d.creditCard.balance||0);}
- try{localStorage.setItem("virajFinance",JSON.stringify(d));}catch(e){}
- window.data=d;
- if(typeof window.show==="function")window.show("dashboard");
- return {handled:true,type:type,amount:amount,category:category,date:dateText,month:targetMonth,account:acc?acc.name:"Unassigned"};
+ if(!m)return {handled:false,reason:"I can add this only when "+targetMonth+" exists in your monthly tracker. Add that month first."};
+ var desc;
+ if(type==="income")desc=category==="Salary"?"Salary":"Income";
+ else if(/lidl/i.test(low))desc="Lidl shopping";
+ else if(/dunnes/i.test(low))desc="Dunnes shopping";
+ else if(/aldi/i.test(low))desc="Aldi shopping";
+ else if(/tesco/i.test(low))desc="Tesco shopping";
+ else desc=category;
+ return {
+   handled:true,type:type,amount:amount,category:category,date:dateText,month:targetMonth,
+   accountId:accountId,currency:currency,
+   input:{type:type,amount:amount,date:dateText,description:desc,category:category,accountId:accountId,currency:currency,notes:"Added via Finance AI"}
+ };
 }
 
 function loadHistory(){try{return JSON.parse(localStorage.getItem(KEY_HISTORY)||"[]")}catch(e){return []}}
@@ -204,35 +214,70 @@ function renderChat(){
 async function ask(){
  var input=$("vAIInput"),btn=$("vAISend"),q=(input&&input.value||"").trim();
  if(!q)return;
- input.value=""; btn.disabled=true;
+ input.value=""; if(btn)btn.disabled=true;
+
+ var pendingTx=pendingFinance();
+ var looksLikeAmount=/^(?:€|eur|euro|rs\.?|₹|inr)?\s*[0-9]+(?:[.,][0-9]{1,2})?\s*$/i.test(q);
+ if(pendingTx&&looksLikeAmount){
+   pendingTx.amount=num(q.replace(/[^\d.,]/g,"").replace(/,/g,""));
+   if(pendingTx.amount>0){
+     try{
+       var completed=window.financeCore?window.financeCore.addTransaction(pendingTx):null;
+       localStorage.removeItem("virajPendingFinance");
+       var pmsg="Added to "+new Date(pendingTx.date+"T00:00:00").toLocaleDateString("en-IE",{day:"2-digit",month:"short",year:"numeric"})+": "+(pendingTx.type==="income"?"income":"expense")+" "+(pendingTx.currency==="INR"?inr(pendingTx.amount):eur(pendingTx.amount))+" · "+pendingTx.category+(completed&&completed.accountId?" · "+(((getData().accounts||[]).find(function(a){return a.id===completed.accountId})||{}).name||""):"")+". Dashboard updated.";
+       var ph=loadHistory();ph.push({role:"user",text:q},{role:"assistant",text:pmsg});saveHistory(ph);renderChat();if(btn)btn.disabled=false;if(input)input.focus();return;
+     }catch(e){
+       var eh=loadHistory();eh.push({role:"user",text:q},{role:"assistant",text:"I couldn't add that transaction: "+e.message});saveHistory(eh);renderChat();if(btn)btn.disabled=false;if(input)input.focus();return;
+     }
+   }
+ }
+
  var quick=parseQuickFinanceCommand(q);
+ if(quick.needsAmount){
+   localStorage.setItem("virajPendingFinance",JSON.stringify({
+     type:quick.type||(/salary|received|income/i.test(q)?"income":"expense"),
+     category:quick.category||"Other",
+     date:quick.date||new Date().toISOString().slice(0,10),
+     accountId:quick.accountId||"",
+     currency:quick.currency||"EUR",
+     description:quick.description||quick.category||"Expense",
+     notes:"Added via Finance AI"
+   }));
+   var nh=loadHistory();nh.push({role:"user",text:q},{role:"assistant",text:quick.prompt});saveHistory(nh);renderChat();if(btn)btn.disabled=false;if(input)input.focus();return;
+ }
  if(quick.handled){
-  var msg="Added to "+new Date(quick.date+"T00:00:00").toLocaleDateString("en-IE",{day:"2-digit",month:"short",year:"numeric"})+": "+(quick.type==="income"?"income":"expense")+" "+eur(quick.amount)+" · "+quick.category+" · "+quick.account+". Dashboard updated.";
-  var qh=loadHistory(); qh.push({role:"user",text:q},{role:"assistant",text:msg}); saveHistory(qh); renderChat(); btn.disabled=false; if(input)input.focus(); return;
+   try{
+     var tx=window.financeCore?window.financeCore.addTransaction(quick.input):null;
+     var accName=tx&&tx.accountId?(((getData().accounts||[]).find(function(a){return a.id===tx.accountId})||{}).name||""):"";
+     var msg="Added to "+new Date(quick.date+"T00:00:00").toLocaleDateString("en-IE",{day:"2-digit",month:"short",year:"numeric"})+": "+(quick.type==="income"?"income":"expense")+" "+(quick.currency==="INR"?inr(quick.amount):eur(quick.amount))+" · "+quick.category+(accName?" · "+accName:"")+". Dashboard updated.";
+     var qh=loadHistory();qh.push({role:"user",text:q},{role:"assistant",text:msg});saveHistory(qh);renderChat();if(btn)btn.disabled=false;if(input)input.focus();return;
+   }catch(e){
+     var qerr=loadHistory();qerr.push({role:"user",text:q},{role:"assistant",text:"I couldn't add that transaction: "+e.message});saveHistory(qerr);renderChat();if(btn)btn.disabled=false;if(input)input.focus();return;
+   }
  }
  if(quick.reason){
-  var rh=loadHistory(); rh.push({role:"user",text:q},{role:"assistant",text:quick.reason}); saveHistory(rh); renderChat(); btn.disabled=false; if(input)input.focus(); return;
+   var rh=loadHistory();rh.push({role:"user",text:q},{role:"assistant",text:quick.reason});saveHistory(rh);renderChat();if(btn)btn.disabled=false;if(input)input.focus();return;
  }
- var h=loadHistory(); h.push({role:"user",text:q}); saveHistory(h); renderChat();
- var pending=$("vAIPending"); if(pending)pending.style.display="block";
+ var h=loadHistory();h.push({role:"user",text:q});saveHistory(h);renderChat();
+ var pending=$("vAIPending");if(pending)pending.style.display="block";
  try{
   var endpoint=(localStorage.getItem(KEY_ENDPOINT)||DEFAULT_ENDPOINT).trim();
   var token=(localStorage.getItem(KEY_TOKEN)||"").trim();
   var answer;
   if(endpoint){
    var res=await fetch(endpoint,{method:"POST",headers:Object.assign({"Content-Type":"application/json"},token?{"X-Viraj-App-Token":token}:{}),body:JSON.stringify({question:q,finance:snapshot(),history:h.slice(-12)})});
-   var body=await res.json().catch(function(){return {}}); 
+   var body=await res.json().catch(function(){return {}});
    if(!res.ok)throw new Error(body.error||"AI backend returned HTTP "+res.status);
    answer=body.answer||body.output_text||"The AI backend returned no answer.";
   }else{
    answer=localAnswer(q);
   }
-  h=loadHistory(); h.push({role:"assistant",text:answer}); saveHistory(h); renderChat();
+  h=loadHistory();h.push({role:"assistant",text:answer});saveHistory(h);renderChat();
  }catch(e){
-  h=loadHistory(); h.push({role:"assistant",text:"I could not reach the AI backend: "+e.message+" You can still use the built-in finance calculations, or check the AI endpoint in Settings."}); saveHistory(h); renderChat();
+  h=loadHistory();h.push({role:"assistant",text:"I could not reach the AI backend: "+e.message+" You can still use the built-in finance calculations, or check the AI endpoint in Settings."});saveHistory(h);renderChat();
  }finally{
   if(pending)pending.style.display="none";
-  btn.disabled=false; if(input)input.focus();
+  if(btn)btn.disabled=false;if(input)input.focus();
  }
 }
 function clearChat(){localStorage.removeItem(KEY_HISTORY);renderChat();}
