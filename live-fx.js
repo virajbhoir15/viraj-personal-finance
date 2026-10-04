@@ -5,8 +5,10 @@
   var GOOGLE_PROXY="https://viraj-finance-ai.virajbhoir-ie.workers.dev/fx/google";
   var HISTORY_API="https://api.frankfurter.dev/v2/providers/ecb/rates";
   var GOOGLE_FALLBACK=108.7468;
+  var cachedRate=Number(localStorage.getItem("virajGoogleFxRate")||0);
+  if(!isFinite(cachedRate)||cachedRate<100||cachedRate>120)cachedRate=GOOGLE_FALLBACK;
   var state={
-    rate:Number(localStorage.getItem("virajGoogleFxRate")||GOOGLE_FALLBACK),
+    rate:cachedRate,
     date:localStorage.getItem("virajGoogleFxDate")||"",
     source:localStorage.getItem("virajGoogleFxSource")||"Google Finance · last known",
     change:null,
@@ -262,8 +264,8 @@
   var oldShow=window.show;
   window.show=function(id){var r=oldShow?oldShow.apply(this,arguments):null;setTimeout(decorate,70);return r;};
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",function(){setTimeout(decorate,160);setInterval(fetchGoogleRate,5*60*1000);});
-  else {setTimeout(decorate,160);setInterval(fetchGoogleRate,5*60*1000);}
-  window.virajFX={state:state,refresh:function(){fetchGoogleRate();fetchHistory(state.range,true);}};
+  else {setTimeout(decorate,160);setTimeout(decorate,700);setTimeout(decorate,1500);setInterval(fetchGoogleRate,5*60*1000);}
+  window.virajFX={state:state,refresh:function(){fetchGoogleRate();fetchHistory(state.range,true);},decorate:decorate};
 })()  const exactClass = /class="[^"]*YMlKec[^"]*fxKbKc[^"]*"[^>]*>\\s*([0-9]{2,3}(?:\\.[0-9]{4,6}))/gi;
   const candidates = [];
   for (const m of html.matchAll(exactClass)) {
