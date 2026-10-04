@@ -51,7 +51,7 @@ function localLogin(){
     state.connected=true;hideGate();status("Signed in with your app password.",true);
     if(typeof toast==="function")toast("Signed in");
     if(window.driveSync&&typeof window.driveSync.connect==="function")window.driveSync.connect().catch(function(){});
-    else if(window.driveSync&&typeof window.driveSync.start==="function")window.driveSync.start(false);
+    else if(window.driveSync&&typeof window.driveSync.connect==="function")window.driveSync.connect();
   });
 }
 function createLocalCredential(){
