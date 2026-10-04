@@ -169,11 +169,11 @@ function parseQuickFinanceCommand(q){
    else if(/aib|regular account|bank account/i.test(low))accountId="aib-regular";
    else if(type==="income")accountId="aib-regular";
  }
+ var m=d.months&&d.months[targetMonth];
  if(!amount){
    if(!m)return {handled:false,needsAmount:true,reason:"That month is not in your tracker yet. Add the month first, then tell me the amount.",type:type,category:category,currency:currency,date:dateText,accountId:accountId};
    return {handled:false,needsAmount:true,prompt:"How much was it? You can reply with just the amount, for example “650”.",type:type,category:category,currency:currency,date:dateText,accountId:accountId,description:category};
  }
- var m=d.months&&d.months[targetMonth];
  if(!m)return {handled:false,reason:"I can add this only when "+targetMonth+" exists in your monthly tracker. Add that month first."};
  var desc;
  if(type==="income")desc=category==="Salary"?"Salary":"Income";
