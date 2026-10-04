@@ -96,12 +96,13 @@
     panel.innerHTML='<div class="pfHealthScore" style="background:conic-gradient(#3157d5 0deg,#7c3aed '+(h.score*3.6)+'deg,#e7ebf2 '+(h.score*3.6)+'deg)"><strong>'+h.score+'</strong></div><div class="pfHealthText"><b>Financial Health <span class="badge">APP SCORE</span></b><small>'+msg+'. This is a simple planning score based on your stored safe-to-spend, spending discipline, savings and loan-plan data — not a credit score.</small></div><div class="pfHealthStats"><div><span>Safe to spend</span><strong class="'+(h.safe<0?"negative":"positive")+'">'+eur(h.safe)+'</strong></div><div><span>Budget check</span><strong class="'+(h.overspend?"negative":"positive")+'">'+(h.overspend?"Over budget":"On track")+'</strong></div></div>';
     stats.parentNode.insertBefore(panel,stats.nextSibling);
   }
-  function boot(){addTopButton();addToolsPanel();addHealth()}
+  function ensureLiveFX(){if(window.__view==="dashboard"&&window.virajFX&&typeof window.virajFX.decorate==="function"){window.virajFX.decorate();setTimeout(function(){if(!document.getElementById("virajFxCard"))window.virajFX.decorate();},500);}}
+  function boot(){addTopButton();addToolsPanel();addHealth();ensureLiveFX();}
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",function(){setTimeout(boot,300)});else setTimeout(boot,300);
   var oldShow=window.show;
   window.show=function(id){
     var r=oldShow?oldShow.apply(this,arguments):null;
-    setTimeout(function(){addTopButton();addToolsPanel();addHealth()},180);
+    setTimeout(function(){addTopButton();addToolsPanel();addHealth();ensureLiveFX()},180);
     return r;
   };
   window.pfTools={open:openTools,close:closeTools,health:health};
