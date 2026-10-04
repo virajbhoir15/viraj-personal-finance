@@ -297,7 +297,7 @@ window.show=show;
 document.addEventListener("click",function(e){
  var nav=e.target.closest("[data-nav]");if(nav){e.preventDefault();show(nav.dataset.nav);return}
  var b=e.target.closest("[data-action]");if(b){var a=b.dataset.action;
-  if(a==="addTx")txModal();if(a==="addIncome")txModal(null,"income");if(a==="addAccount")accountModal();if(a==="addGoal")goalModal();if(a==="editLoan")loanModal();if(a==="editCard")cardModal();if(a==="addRecurring")recurringModal();if(a==="addCategory")addCategory();if(a==="addMonth")addUpcomingMonth();
+  if(a==="addTx")txModal();if(a==="addIncome")txModal(null,"income");if(a==="addAccount")accountModal();if(a==="addGoal")goalModal();if(a==="editLoan")loanModal();if(a==="editCard")cardModal();if(a==="addRecurring")recurringModal();if(a==="addCategory")addCategory();if(a==="addMonth"||a==="addUpcomingMonth")addUpcomingMonth();
   if(a==="saveBudget"){var k=window.__budgetMonth||curMonth();document.querySelectorAll("[data-budget]").forEach(function(i){data.months[k].budget[i.dataset.budget]=N(i.value)});save("Budget saved");show("budget")}
   if(a==="snapshot")snapshot();if(a==="export")exportJSON();if(a==="reset")resetData();
   if(a==="saveClient"){localStorage.setItem("googleClientId",($("clientId").value||"").trim());toast("Client ID saved")}
