@@ -378,6 +378,15 @@
       if (localStorage.getItem("virajDriveConnected") === "1") start(false);
     });
     window.addEventListener("offline", function () { status("Offline · saved locally", "offline"); });
+    window.addEventListener("storage", function (e) {
+      if (e.key !== "virajFinance" || !e.newValue || state.busy || state.dirty) return;
+      try {
+        var incoming = JSON.parse(e.newValue);
+        if (!incoming || !incoming.months) return;
+        replaceInPlace(incoming);
+        status("Updated from another tab", "live");
+      } catch (err) {}
+    });
     document.addEventListener("visibilitychange", function () {
       if (document.visibilityState === "visible" && localStorage.getItem("virajDriveConnected") === "1") syncFromDrive();
     });
