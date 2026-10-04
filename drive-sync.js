@@ -97,7 +97,7 @@
     });
   }
 
-  async function upload(t) {
+  async function upload(t, force) {
     var meta = await findFile(t);
     if (meta && state.remoteModified && meta.modifiedTime && meta.modifiedTime !== state.remoteModified && !state.dirty) {
       var remoteWrapper = await downloadFile(t, meta);
@@ -108,7 +108,7 @@
       status("Cloud synced", "live");
       return "pulled";
     }
-    if (meta && state.remoteModified && meta.modifiedTime && meta.modifiedTime !== state.remoteModified && state.dirty) {
+    if (meta && state.remoteModified && meta.modifiedTime && meta.modifiedTime !== state.remoteModified && state.dirty && !force) {
       state.conflict = true;
       status("Drive changed elsewhere", "conflict");
       return "conflict";
@@ -204,7 +204,7 @@
     }
   }
 
-  async function syncNow(interactive) {
+  async function syncNow(interactive, force) {
     if (state.busy) return;
     if (!navigator.onLine) {
       status("Offline · saved locally", "offline");
@@ -214,7 +214,7 @@
     status("Syncing…", "syncing");
     try {
       var t = await token(!!interactive);
-      var result = await upload(t);
+      var result = await upload(t, !!force);
       if (result === "conflict") return result;
       if (result === "pulled") {
         state.dirty = false;
@@ -343,7 +343,7 @@
     }
     state.dirty = true;
     try { localStorage.setItem("virajDriveDirty", "1"); } catch (e) {}
-    var result = await syncNow(true);
+    var result = await syncNow(true, true);
     return result;
   }
 
@@ -351,7 +351,7 @@
     state: state,
     start: start,
     connect: connect,
-    syncNow: function () { return syncNow(true); },
+    syncNow: function () { return syncNow(true, true); },
     syncFromDrive: syncFromDrive,
     restore: restore,
     markDirty: schedulePush,
