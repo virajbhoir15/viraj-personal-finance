@@ -10,6 +10,15 @@ var curMonth=function(){return months().at(-1)||"2026-10"};
 var sum=function(o){return Object.values(o||{}).reduce(function(a,b){return a+N(b)},0)};
 var spend=function(k){return sum(data.months[k]&&data.months[k].actual)};
 var plan=function(k){return sum(data.months[k]&&data.months[k].budget)};
+var addUpcomingMonth=function(){
+ var ks=months(),base=ks.at(-1)||"2026-10",d=new Date(base+"-01T00:00:00");d.setMonth(d.getMonth()+1);
+ var key=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");
+ if(data.months[key]){window.__budgetMonth=key;budgetView();return;}
+ var prev=data.months[base]||{},budget=JSON.parse(JSON.stringify(prev.budget||{})),actual={};
+ Object.keys(budget).forEach(function(x){actual[x]=0});
+ data.months[key]={label:mlabel(key),income:0,budget:budget,actual:actual};
+ window.__budgetMonth=key;save("Added "+mlabel(key));budgetView();
+};
 var mlabel=function(k){return new Date(k+"-01T00:00:00").toLocaleDateString("en-IE",{month:"long",year:"numeric"})};
 var dateText=function(d){return d?new Date(d+"T00:00:00").toLocaleDateString("en-IE",{day:"2-digit",month:"short",year:"numeric"}):"—"};
 
@@ -98,7 +107,7 @@ function dashboard(){
 function budgetView(){
  var k=window.__budgetMonth||curMonth(),m=data.months[k]||{},ks=months(),cats=[...new Set(Object.keys(m.budget||{}).concat(Object.keys(m.actual||{})))];
  var rows=cats.map(function(c){var b=N(m.budget[c]),a=N(m.actual[c]),d=b-a,p=b?Math.min(100,a/b*100):0;return '<tr><td><b>'+esc(c)+'</b></td><td><input data-budget="'+esc(c)+'" type="number" step=".01" value="'+b+'"></td><td>'+E(a)+'</td><td class="'+(d<0?"negative":"positive")+'">'+E(d)+'</td><td><div class="miniProgress"><i style="width:'+p+'%"></i></div></td></tr>'}).join("");
- $("pfContent").innerHTML='<div class="heroRow"><div><div class="eyebrow">MONTHLY PLAN</div><h2>Budget</h2><p>Budget and actual stay beside each other so variance is obvious.</p></div><div class="monthSelect">'+ks.map(function(x){return '<button data-month="'+x+'" class="'+(x===k?"selected":"")+'">'+mlabel(x).replace(" 20"," ")+'</button>'}).join("")+'</div></div>'+
+ $("pfContent").innerHTML='<div class="heroRow"><div><div class="eyebrow">MONTHLY PLAN</div><h2>Budget</h2><p>Budget and actual stay beside each other so variance is obvious.</p></div><div class="monthSelect">'+ks.map(function(x){return '<button data-month="'+x+'" class="'+(x===k?"selected":"")+'">'+mlabel(x).replace(" 20"," ")+'</button>'}).join("")+'<button class="addMonthBtn" data-action="addUpcomingMonth">+ Add upcoming month</button></div></div>'+
  '<div class="statsGrid compact">'+stat("Income",E(m.income),"Period income")+stat("Budget",E(plan(k)),"Planned outflow")+stat("Actual",E(spend(k)),"Recorded outflow")+stat("Variance",E(N(m.income)-spend(k)),"Income less actual",N(m.income)-spend(k)<0?"negative":"positive")+'</div>'+
  card("Category budget",'<div class="tableWrap"><table><thead><tr><th>Category</th><th>Budget €</th><th>Actual €</th><th>Remaining</th><th>Usage</th></tr></thead><tbody>'+rows+'</tbody></table></div><div class="actions"><button class="primary" data-action="addCategory">+ Add category</button><button data-action="saveBudget">Save changes</button></div>')+
  card("India commitments","<div class='commitmentGrid'>"+Object.entries(data.detail&&data.detail.India||{}).map(function(x){return '<div><span>'+esc(x[0])+'</span><b>'+E(x[1])+'</b></div>'}).join("")+"</div><p class='hint'>Legacy India tracker values are retained. New transactions should be entered in the ledger so the app has one source of truth.</p>");
