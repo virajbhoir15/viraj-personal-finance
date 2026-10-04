@@ -212,6 +212,8 @@
 
   function showView(id) {
     if(id==="home")id="dashboard";
+    if(id==="accounts")id="money";
+    if(id==="goals"||id==="planning")id="plans";
     if(id==="money"){window.__view="money";rebuildNavigation();navActive("money");moneyView();postRender();return;}
     if(id==="plans"){window.__view="plans";rebuildNavigation();navActive("plans");plansView();postRender();return;}
     if(id==="insights")id="reports";
