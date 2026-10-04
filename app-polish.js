@@ -175,6 +175,76 @@
     mobile.querySelectorAll("[data-nav]").forEach(function(b){b.classList.toggle("active",b.dataset.nav===active);});
   }
 
+
+    @media(max-width:1100px){
+      html{width:100%;min-height:100%;background:#f4f6fb;overflow-x:hidden}
+      body{width:100%;min-width:0;min-height:100dvh;overflow-x:hidden;background:#f4f6fb;-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%;overscroll-behavior-y:contain}
+      .appShell{min-height:100dvh}
+      .main{min-width:0;width:100%!important;margin:0!important}
+      .topbar{position:sticky;top:0;height:64px!important;min-height:64px;padding:8px 14px!important;background:rgba(255,255,255,.96)!important;border-bottom:1px solid #e7eaf0;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);z-index:70}
+      .topbar>div:first-child{min-width:0;display:flex;flex-direction:column;justify-content:center}
+      .crumb{display:none!important}
+      .topbar h1{margin:0!important;font-size:18px!important;line-height:1.1;display:flex;align-items:center;gap:8px;letter-spacing:-.02em}
+      .topbar h1:before{content:"";width:26px;height:26px;border-radius:8px;background:#3157d5 url("icon.svg") center/cover no-repeat;display:inline-block;flex:none;box-shadow:0 4px 12px #3157d526}
+      .topActions{margin-left:auto;gap:6px!important;align-items:center}
+      .topActions .userChip{font-size:11px!important;padding:7px 9px!important;border-radius:10px!important;background:#f7f9fd!important}
+      .uxTopSearch{margin:0!important}
+      .uxAIButton{padding:8px 9px!important;border-radius:10px!important;font-size:11px!important}
+      .uxSettingsTop{width:34px;height:34px;padding:0!important;border-radius:10px!important;font-size:16px!important;display:grid;place-items:center}
+      .content{width:100%;max-width:none!important;padding:14px 12px calc(104px + env(safe-area-inset-bottom))!important}
+      .heroRow{margin-bottom:12px!important;gap:9px!important}
+      .heroRow h2{font-size:23px!important;line-height:1.08}
+      .heroRow p{font-size:12px;line-height:1.45}
+      .heroRow .actions{display:grid!important;grid-template-columns:1fr 1fr!important;width:100%!important}
+      .heroRow .actions button,.actions button,.primary,.uxSecondary{min-height:42px}
+      .statsGrid{grid-template-columns:1fr 1fr!important;gap:8px!important}
+      .stat{min-width:0;padding:12px!important;border-radius:14px!important;box-shadow:0 2px 12px #1720330b}
+      .stat span{font-size:9px!important;letter-spacing:.05em}
+      .stat strong{font-size:18px!important;line-height:1.05;overflow-wrap:anywhere}
+      .stat small{font-size:10px!important}
+      .panel,.view .card{margin-top:10px!important;padding:14px!important;border-radius:16px!important;box-shadow:0 2px 14px #1720330b}
+      .panelHead{margin-bottom:11px!important}
+      .panel h2{font-size:14px!important}
+      .dashboardGrid,.dashboardGrid.lower,.reportGrid,.planningGrid{grid-template-columns:1fr!important;gap:10px!important}
+      .tableWrap{border-radius:12px;overflow:auto;-webkit-overflow-scrolling:touch}
+      th{font-size:9px!important}
+      th,td{padding:10px 8px!important;white-space:nowrap}
+      input,select,.toolbar input,.uxField input,.uxField select{min-height:42px;font-size:16px!important}
+      .uxSheetBack,.modalBack{padding:0!important;align-items:flex-end!important}
+      .uxSheet,.modal{width:100%!important;max-width:none!important;max-height:92dvh;border-radius:22px 22px 0 0!important;padding:18px!important;padding-bottom:calc(18px + env(safe-area-inset-bottom))!important}
+      .uxSheetHead,.modalHead{position:sticky;top:0;background:#fff;z-index:2;padding-bottom:9px}
+      .uxSheetHead h2,.modalHead h2{font-size:19px!important}
+      .uxTypeTabs{gap:7px!important}
+      .uxTypeTabs button{min-height:44px;font-size:13px}
+      .mobileNav{display:grid!important;position:fixed!important;left:0;right:0;bottom:0;height:calc(82px + env(safe-area-inset-bottom))!important;padding:7px 8px calc(8px + env(safe-area-inset-bottom))!important;background:rgba(255,255,255,.97)!important;border-top:1px solid #e0e5ee!important;box-shadow:0 -10px 28px #17203316!important;backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);z-index:95!important}
+      .mobileNav button{min-height:62px!important;border:0!important;background:transparent!important;border-radius:14px!important;padding:3px 2px!important;font-size:12px!important;font-weight:900!important;display:flex!important;align-items:center;justify-content:center;flex-direction:column;gap:3px;color:#64748b}
+      .mobileNav button .pfNavIcon{width:38px!important;height:38px!important;border-radius:12px!important}
+      .mobileNav button .pfNavIcon svg{width:23px!important;height:23px!important}
+      .mobileNav button .pfBottomLabel{font-size:11px!important;font-weight:900!important;line-height:1!important}
+      .mobileNav button.active .pfBottomLabel{font-size:11.5px!important}
+      .mobileNav:after{left:14%!important;right:14%!important;height:3px!important;bottom:calc(2px + env(safe-area-inset-bottom))!important}
+      .uxAdd{width:56px!important;height:56px!important;border-radius:50%!important;right:15px!important;bottom:calc(92px + env(safe-area-inset-bottom))!important;padding:0!important;font-size:0!important;display:grid!important;place-items:center;box-shadow:0 12px 28px #3157d552!important}
+      .uxAdd:before{content:"+";font-size:28px;line-height:1;font-weight:400}
+      .barChart{height:200px!important;gap:9px!important}
+      .barTrack{height:145px!important}
+      .barTrack i{width:24px!important}
+      .fxHistoryHead{align-items:flex-start!important;flex-direction:column!important}
+      .fxRangeTabs{width:100%!important;display:grid!important;grid-template-columns:repeat(6,1fr);gap:4px!important}
+      .fxRangeTabs button{min-height:36px;padding:6px 3px!important;font-size:9px!important}
+      .virajFxChart{height:210px!important}
+      .fxStats{grid-template-columns:1fr 1fr!important}
+      .uxMerchantRail{grid-template-columns:1fr 1fr!important}
+    }
+    @media(max-width:390px){
+      .topbar{padding-left:10px!important;padding-right:10px!important}
+      .topbar h1{font-size:16px!important}
+      .topbar h1:before{width:24px;height:24px}
+      .content{padding-left:10px!important;padding-right:10px!important}
+      .stat strong{font-size:16px!important}
+      .mobileNav button .pfNavIcon{width:35px!important;height:35px!important}
+      .mobileNav button .pfBottomLabel{font-size:10px!important}
+    }
+
   var previousShow=window.show;
   window.show=function(id){
     var r=previousShow?previousShow.apply(this,arguments):null;
