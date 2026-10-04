@@ -30,7 +30,7 @@
     .uxHistoryTable td,.uxHistoryTable th{padding:9px 8px}
     .uxHistoryTable tr:last-child td{border-bottom:0}
     @media(max-width:900px){.uxRestoredTools{grid-template-columns:1fr 1fr}}
-    @media(max-width:700px){
+    @media(max-width:1100px){
       body{font-size:13px;padding-bottom:72px}
       .sidebar{display:none!important}
       .main{margin-left:0!important;width:100%!important}
