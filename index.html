@@ -5,58 +5,42 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Viraj Personal Finance Centre</title>
 <meta name="theme-color" content="#3157d5">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="manifest" href="manifest.json">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
 <div id="loginGate" class="loginGate">
   <div class="loginCard">
-    <div class="loginBrand"><span class="loginMark">V</span> Viraj Finance</div>
+    <div class="loginBrand"><span class="loginMark"><img src="icon.svg" alt=""></span> Viraj Finance</div>
     <div class="loginSub">Personal Finance Centre</div>
-    <label>Username</label>
-    <input id="loginUser" autocomplete="username" value="viraj">
-    <label>Password</label>
-    <input id="loginPass" type="password" autocomplete="current-password" placeholder="Enter password">
-    <button class="primary loginBtn" onclick="login()">Sign in</button>
-    <div id="loginError" class="loginError">Incorrect username or password.</div>
-    <div class="loginFine">Private finance workspace. Data is stored locally in this browser unless you connect a backup.</div>
+    <div class="loginIntro">Secure sign-in and automatic Google Drive sync for your finance workspace.</div>
   </div>
 </div>
 <div id="toast" class="toast"></div>
 <style>
 .loginGate{position:fixed;inset:0;z-index:1000;background:#f5f7fb;display:flex;align-items:center;justify-content:center;padding:20px}
-.loginCard{width:min(410px,100%);background:#fff;border:1px solid #e6e9ef;border-radius:16px;padding:30px;box-shadow:0 20px 60px #17203316}
-.loginBrand{font-size:23px;font-weight:850;color:#172033;display:flex;align-items:center;gap:9px}.loginMark{width:36px;height:36px;border-radius:10px;background:#3157d5;color:#fff;display:grid;place-items:center;font-size:18px}.loginSub{color:#697386;margin:7px 0 24px}.loginCard label{display:block;font-size:11px;color:#697386;font-weight:750;margin:12px 0 5px}.loginCard input{width:100%;padding:11px;border:1px solid #d9dee7;border-radius:8px}.loginBtn{width:100%;margin-top:17px}.loginError{display:none;margin-top:10px;padding:9px;background:#fff3f4;color:#a32c38;border-radius:8px;font-size:12px}.loginFine{font-size:10px;color:#8b94a4;margin-top:14px;line-height:1.5}
+.loginCard{width:min(430px,100%);background:#fff;border:1px solid #e6e9ef;border-radius:18px;padding:30px;box-shadow:0 20px 60px #17203316}
+.loginBrand{font-size:23px;font-weight:850;color:#172033;display:flex;align-items:center;gap:10px}.loginMark{width:40px;height:40px;border-radius:11px;overflow:hidden;display:block}.loginMark img{width:100%;height:100%;display:block}.loginSub{color:#697386;margin:7px 0 10px}.loginIntro{font-size:12px;line-height:1.55;color:#697386}
+.toast{position:fixed;right:20px;bottom:20px;background:#172033;color:#fff;border-radius:9px;padding:10px 13px;display:none;z-index:100}
 </style>
-<script src="app.js?v=17"></script>
+<script src="app.js?v=18"></script>
 <script src="finance-core.js?v=1"></script>
-<script src="drive-sync.js?v=1"></script>
-<script src="finance-ux.js?v=1"></script>
+<script src="drive-sync.js?v=2"></script>
+<script src="finance-ux.js?v=2"></script>
+<script src="professional-visuals.js?v=1"></script>
+<script src="live-fx.js?v=1"></script>
 <script src="auth.js" defer></script>
-<script src="ai.js?v=12" defer></script>
+<script src="ai.js?v=13" defer></script>
 <script>
-function login(){
-  var u=(document.getElementById("loginUser").value||"").trim().toLowerCase();
-  var p=(document.getElementById("loginPass").value||"").trim();
-  var ok=u==="viraj"&&p==="Viraj0201";
-  if(ok){
-    try{sessionStorage.setItem("virajFinanceLoggedIn","1");localStorage.setItem("virajFinanceLoggedIn","1")}catch(e){}
-    document.getElementById("loginGate").style.display="none";
-  }else{
-    var e=document.getElementById("loginError");e.style.display="block";
-  }
-}
 function logout(){
-  try{sessionStorage.removeItem("virajFinanceLoggedIn");localStorage.removeItem("virajFinanceLoggedIn");sessionStorage.removeItem("virajGoogleSession")}catch(e){}
+  try{
+    sessionStorage.removeItem("virajFinanceLoggedIn");
+    localStorage.removeItem("virajFinanceLoggedIn");
+    sessionStorage.removeItem("virajGoogleSession");
+  }catch(e){}
   location.reload();
 }
-(function(){
- try{
-  if(sessionStorage.getItem("virajFinanceLoggedIn")==="1"||localStorage.getItem("virajFinanceLoggedIn")==="1")document.getElementById("loginGate").style.display="none";
- }catch(e){}
- var p=document.getElementById("loginPass");
- if(p)p.addEventListener("keydown",function(e){if(e.key==="Enter")login()});
-})();
 if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js");
 </script>
 </body>
