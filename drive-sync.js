@@ -35,7 +35,11 @@
         else { state.dirty = true; resolveCloud(false); }
         return;
       }
-      if (window.show) window.show("settings");
+      if (localStorage.getItem("virajDriveConnected") !== "1") {
+        connect().then(function(result){
+          if(result!=="error" && result!=="not-connected") status("Cloud synced","live");
+        });
+      } else if (window.show) window.show("settings");
     };
     top.insertBefore(st, top.firstChild);
     var css = document.createElement("style");
@@ -323,10 +327,12 @@
   }
 
   async function connect() {
-    setConnected(true);
     state.token = null;
     state.started = false;
-    return start(true);
+    setConnected(false);
+    var result = await start(true);
+    if (result === "error" || result === "not-connected") setConnected(false);
+    return result;
   }
 
   async function restore() {
