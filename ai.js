@@ -15,12 +15,12 @@ function sumObj(o){return Object.values(o||{}).reduce(function(a,b){return a+num
 function getData(){try{return typeof data!=="undefined"?data:null}catch(e){return null}}
 function recentMonths(){
  var d=getData(); if(!d||!d.months)return [];
- return Object.keys(d.months).sort().slice(-3).map(function(k){return {key:k,label:d.months[k].label,income:num(d.months[k].income),spend:sumObj(d.months[k].actual||{})}});
+ return Object.keys(d.months).sort().map(function(k){return {key:k,label:d.months[k].label,income:num(d.months[k].income),spend:sumObj(d.months[k].actual||{})}});
 }
 function spendable(){
  var d=getData(); if(!d)return 0;
  var accounts=Array.isArray(d.accounts)?d.accounts:[];
- return accounts.filter(function(a){return a.currency==="EUR" && !a.excludeFromSpendable}).reduce(function(a,b){return a+num(b.balance)},0);
+ return accounts.filter(function(a){return a.currency==="EUR" && a.type!=="Credit Card" && a.includeInSafeSpend!==false}).reduce(function(a,b){return a+num(b.balance)},0);
 }
 function recurring(){
  var d=getData(); if(!d)return 0;
