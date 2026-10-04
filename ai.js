@@ -64,6 +64,14 @@ function snapshot(){
  monthData.forEach(function(m){Object.keys(m.budget||{}).forEach(function(cat){var b=num(m.budget[cat]),x=num((m.actual||{})[cat]);if(b>0&&x>b)budgetAlerts.push({month:m.label,category:cat,over:num(x-b)});});});
  var goals=goalInfo();
  var safe=spendable()-recurring()-1000;
+ var liveFx=(function(){
+   try{
+     var r=Number(localStorage.getItem("virajGoogleFxRate")||0);
+     var dt=localStorage.getItem("virajGoogleFxDate")||"";
+     var src=localStorage.getItem("virajGoogleFxSource")||"";
+     return (isFinite(r)&&r>=100&&r<=120)?{eurInr:r,date:dt,source:src||"Google Finance"}:null;
+   }catch(e){return null;}
+ })();
  var totalEUR=accounts.filter(function(a){return a.currency==="EUR"&&a.type!=="Credit Card"}).reduce(function(s,a){return s+a.balance},0);
  var savings=accounts.filter(function(a){return a.name==="AIB Savings"&&a.currency==="EUR"}).reduce(function(s,a){return s+a.balance},0);
  var current=accounts.filter(function(a){return a.name==="AIB Regular Account"&&a.currency==="EUR"}).reduce(function(s,a){return s+a.balance},0);
@@ -91,7 +99,8 @@ function snapshot(){
   netWorthHistory:d.networthHistory||[],
   recentTransactions:tx,
   recurringPayments:d.recurring||[],
-  fxEurInr:d.settings&&d.settings.fxEurInr?num(d.settings.fxEurInr):100,
+  fxEurInr:liveFx?liveFx.eurInr:(d.settings&&d.settings.fxEurInr?num(d.settings.fxEurInr):100),
+  liveFxEurInr:liveFx,
   monthlyAIBSaving:100,
   emergencyReserveEUR:1000,
   homeTargetINR:20000000,
@@ -101,6 +110,9 @@ function snapshot(){
 }
 function localAnswer(q){
  var s=q.toLowerCase(), snap=snapshot(), l=snap.educationLoan, latest=snap.recentMonths[snap.recentMonths.length-1];
+ if(/(?:euro|eur|inr|rupee|exchange|currency).*(?:rate|convert)|(?:rate|convert).*(?:euro|eur|inr|rupee)/i.test(s) && snap.liveFxEurInr){
+  return "Current EUR/INR rate in the app: €1 = ₹"+snap.liveFxEurInr.eurInr.toFixed(4)+" ("+snap.liveFxEurInr.source+(snap.liveFxEurInr.date?" · "+snap.liveFxEurInr.date:"")+"). This is the latest quote available to the app, not a bank/remittance rate.";
+ }
  if(/safe|spend|spendable|available cash/.test(s)){
   var safe=snap.spendableEUR-snap.recurringEUR-snap.emergencyReserveEUR;
   return "Based on the accounts currently marked as spendable, you have "+eur(snap.spendableEUR)+" available. After recurring EUR commitments of "+eur(snap.recurringEUR)+" and keeping your €1,000 reserve, your current safe-to-spend figure is about "+eur(safe)+". This is a planning figure, not a bank balance forecast.";
