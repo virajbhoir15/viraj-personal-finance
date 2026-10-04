@@ -262,7 +262,7 @@
     ensureStatusUI();
     var connected = localStorage.getItem("virajDriveConnected") === "1";
     if (!connected && !interactive) {
-      status("Drive not connected", "");
+      status("Connect Google Drive", "offline");
       return "not-connected";
     }
     var result;
