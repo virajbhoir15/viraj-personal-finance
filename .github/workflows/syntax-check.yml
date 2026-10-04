@@ -1,0 +1,23 @@
+name: JavaScript syntax check
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: |
+          node --check app.js
+          node --check auth.js
+          node --check ai.js
+          node --check finance-core.js
+          node --check drive-sync.js
+          node --check finance-ux.js
