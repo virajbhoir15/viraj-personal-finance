@@ -4,7 +4,7 @@
 
   var GOOGLE_PROXY="https://viraj-finance-ai.virajbhoir-ie.workers.dev/fx/google";
   var HISTORY_API="https://api.frankfurter.dev/v2/providers/ecb/rates";
-  var GOOGLE_FALLBACK=108.8450;
+  var GOOGLE_FALLBACK=108.7468;
   var state={
     rate:Number(localStorage.getItem("virajGoogleFxRate")||GOOGLE_FALLBACK),
     date:localStorage.getItem("virajGoogleFxDate")||"",
