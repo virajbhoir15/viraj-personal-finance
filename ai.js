@@ -282,6 +282,13 @@ async function ask(){
    var body=await res.json().catch(function(){return {}});
    if(!res.ok)throw new Error(body.error||"AI backend returned HTTP "+res.status);
    answer=body.answer||body.output_text||"The AI backend returned no answer.";
+   // Guardrail: current EUR/INR questions must use the app's live Google Finance quote.
+   if(/(?:euro|eur|inr|rupee|exchange|currency).*(?:rate|convert)|(?:rate|convert).*(?:euro|eur|inr|rupee)/i.test(q)){
+     var liveNow=snapshot().liveFxEurInr;
+     if(liveNow){
+       answer="Current EUR/INR rate in the app: €1 = ₹"+liveNow.eurInr.toFixed(4)+" ("+liveNow.source+(liveNow.date?" · "+liveNow.date:"")+"). This is the latest quote available to the app, not a bank/remittance rate.";
+     }
+   }
   }else{
    answer=localAnswer(q);
   }
