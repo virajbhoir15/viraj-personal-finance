@@ -6,7 +6,7 @@
   var state={rate:Number(localStorage.getItem("virajFxRate")||FALLBACK),date:localStorage.getItem("virajFxDate")||"",source:"ECB reference",updated:0,busy:false};
 
   function money(n,cur){return (cur==="EUR"?"€":"₹")+Number(n||0).toLocaleString(cur==="EUR"?"en-IE":"en-IN",{minimumFractionDigits:cur==="EUR"?2:0,maximumFractionDigits:cur==="EUR"?2:0});}
-  function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(m){return {"&":"&amp;","<":"&lt;",">":"&gt;",""":"&quot;"}[m]})}
+  function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(m){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[m]})}
   function fetchRate(){
     if(state.busy||!navigator.onLine)return;
     state.busy=true;
