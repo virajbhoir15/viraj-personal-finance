@@ -162,7 +162,7 @@
       currency: cur,
       type: type,
       category: String(input.category || (type === "income" ? "Salary" : "Other")),
-      accountId: input.accountId || defaultAccountId(type, desc, ""),
+      accountId: input.accountId || (cur === "EUR" ? defaultAccountId(type, desc, "") : ""),
       notes: String(input.notes || "").trim(),
       createdAt: input.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString()
@@ -212,9 +212,15 @@
   function editTransaction(id, input) {
     var d = getData(), old = (d.transactions || []).find(function (x) { return x.id === id; });
     if (!old) throw new Error("Transaction not found.");
-    apply(old, -1);
     var next = baseTransaction(Object.assign({}, input, { id: old.id, createdAt: old.createdAt }));
     if (next.amount <= 0) throw new Error("Enter an amount greater than zero.");
+    if (next.type === "transfer" && (!next.fromAccountId || !next.toAccountId || next.fromAccountId === next.toAccountId)) throw new Error("Choose two different accounts for a transfer.");
+    if (next.type === "goal") {
+      var editGoal = (d.goals || []).find(function (g) { return g.id === next.goalId; });
+      if (!editGoal) throw new Error("Choose a goal.");
+      if (editGoal.currency !== next.currency) throw new Error("Goal currency must match the contribution currency.");
+    }
+    apply(old, -1);
     apply(next, 1);
     d.transactions = d.transactions.map(function (x) { return x.id === id ? next : x; });
     rememberAccount(next.description, next.accountId || next.fromAccountId);
