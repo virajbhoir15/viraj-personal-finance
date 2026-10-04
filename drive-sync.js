@@ -29,6 +29,12 @@
     st.type = "button";
     st.title = "Google Drive sync status";
     st.onclick = function () {
+      if (state.conflict) {
+        var useCloud = confirm("Google Drive has newer finance data from another device. OK = use the cloud copy. Cancel = keep this device and overwrite the cloud copy.");
+        if (useCloud) { state.dirty = false; resolveCloud(true); }
+        else { state.dirty = true; resolveCloud(false); }
+        return;
+      }
       if (window.show) window.show("settings");
     };
     top.insertBefore(st, top.firstChild);
@@ -94,8 +100,12 @@
   async function upload(t) {
     var meta = await findFile(t);
     if (meta && state.remoteModified && meta.modifiedTime && meta.modifiedTime !== state.remoteModified && !state.dirty) {
-      /* Remote is newer, but this device has no local unsynced changes: pull first. */
-      await pull(false);
+      var remoteWrapper = await downloadFile(t, meta);
+      replaceInPlace(remoteWrapper.data);
+      state.fileId = meta.id;
+      state.remoteModified = meta.modifiedTime;
+      try { localStorage.setItem("virajDriveLastRemoteModified", state.remoteModified); } catch (e) {}
+      status("Cloud synced", "live");
       return "pulled";
     }
     if (meta && state.remoteModified && meta.modifiedTime && meta.modifiedTime !== state.remoteModified && state.dirty) {
@@ -132,6 +142,7 @@
     state.dirty = false;
     state.conflict = false;
     try {
+      localStorage.removeItem("virajDriveDirty");
       localStorage.setItem("virajDriveBackupId", state.fileId);
       localStorage.setItem("virajDriveBackupAt", nowISO());
       localStorage.setItem("virajDriveLastRemoteModified", state.remoteModified);
@@ -181,6 +192,7 @@
       state.dirty = false;
       state.conflict = false;
       try {
+        localStorage.removeItem("virajDriveDirty");
         localStorage.setItem("virajDriveBackupId", file.id);
         localStorage.setItem("virajDriveLastRemoteModified", state.remoteModified);
         localStorage.setItem("virajDriveBackupAt", nowISO());
@@ -225,6 +237,11 @@
 
   function schedulePush() {
     state.dirty = true;
+    try { localStorage.setItem("virajDriveDirty", "1"); } catch (e) {}
+    if (localStorage.getItem("virajDriveConnected") !== "1") {
+      status("Saved locally", "");
+      return;
+    }
     clearTimeout(state.pushTimer);
     state.pushTimer = setTimeout(function () { syncNow(false); }, 700);
     status("Saving to Drive…", "syncing");
@@ -236,13 +253,38 @@
       return "started";
     }
     state.started = true;
+    state.dirty = localStorage.getItem("virajDriveDirty") === "1";
     ensureStatusUI();
     var connected = localStorage.getItem("virajDriveConnected") === "1";
     if (!connected && !interactive) {
       status("Drive not connected", "");
       return "not-connected";
     }
-    var result = await syncNow(!!interactive);
+    var result;
+    try {
+      if (!interactive && !state.dirty) {
+        var t = await token(false), file = await findFile(t);
+        if (file) {
+          status("Updating from Drive…", "syncing");
+          var wrapper = await downloadFile(t, file);
+          replaceInPlace(wrapper.data);
+          state.fileId = file.id;
+          state.remoteModified = file.modifiedTime || nowISO();
+          try { localStorage.setItem("virajDriveLastRemoteModified", state.remoteModified); } catch (e) {}
+          status("Cloud synced", "live");
+          result = "pulled";
+        } else {
+          result = await syncNow(!!interactive);
+        }
+      } else {
+        result = await syncNow(!!interactive);
+      }
+    } catch (e) {
+      state.started = false;
+      status(navigator.onLine ? "Drive sync unavailable" : "Offline · saved locally", navigator.onLine ? "" : "offline");
+      if (interactive && window.toast) window.toast(e.message || "Drive sync failed");
+      return "error";
+    }
     if (result !== "error") {
       clearInterval(state.timer);
       state.timer = setInterval(function () {
@@ -279,6 +321,7 @@
   async function connect() {
     setConnected(true);
     state.token = null;
+    state.started = false;
     return start(true);
   }
 
@@ -291,8 +334,11 @@
     state.conflict = false;
     if (useCloud) {
       state.dirty = false;
+      try { localStorage.removeItem("virajDriveDirty"); } catch (e) {}
       return pull(true);
     }
+    state.dirty = true;
+    try { localStorage.setItem("virajDriveDirty", "1"); } catch (e) {}
     var result = await syncNow(true);
     return result;
   }
