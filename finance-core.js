@@ -162,7 +162,7 @@
       currency: cur,
       type: type,
       category: String(input.category || (type === "income" ? "Salary" : "Other")),
-      accountId: input.accountId || (cur === "EUR" ? defaultAccountId(type, desc, "") : ""),
+      accountId: type === "goal" ? (input.accountId || "") : (input.accountId || (cur === "EUR" ? defaultAccountId(type, desc, "") : "")),
       notes: String(input.notes || "").trim(),
       createdAt: input.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString()
