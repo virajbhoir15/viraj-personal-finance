@@ -24,7 +24,7 @@
       if(brand)side.appendChild(brand);
       var groups=[
         {label:"Overview",items:[["dashboard","Home"],["money","Money"],["budget","Budget"]]},
-        {label:"Planning",items:[["plans","Plans"],["loan","Education Loan"]]},
+        {label:"Planning",items:[["plans","Plans"],["planning","Planning tools"],["loan","Education Loan"]]},
         {label:"Insights",items:[["insights","Insights"],["ai","Finance AI"]]}
       ];
       groups.forEach(function(g){
@@ -266,7 +266,15 @@
   function showView(id) {
     if(id==="home")id="dashboard";
     if(id==="accounts")id="money";
-    if(id==="goals"||id==="planning")id="plans";
+    if(id==="goals")id="plans";
+    if(id==="planning"){
+      window.__view="planning";
+      rebuildNavigation();
+      navActive("planning");
+      if(legacyShow)legacyShow("planning");
+      postRender();
+      return;
+    }
     if(id==="money"){window.__view="money";rebuildNavigation();navActive("money");moneyView();postRender();return;}
     if(id==="plans"){window.__view="plans";rebuildNavigation();navActive("plans");plansView();postRender();return;}
     if(id==="insights")id="reports";
