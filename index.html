@@ -43,5 +43,6 @@ function logout(){
 }
 if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js");
 </script>
+<script>(function(){try{if(localStorage.getItem("virajFinanceLoggedIn")==="1"||sessionStorage.getItem("virajGoogleSession")==="1")document.getElementById("loginGate").style.display="none"}catch(e){}})();</script>
 </body>
 </html>
