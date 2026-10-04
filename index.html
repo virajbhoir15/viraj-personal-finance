@@ -71,7 +71,8 @@ html.pf-native-mobile .virajFxChart{height:220px!important}\nhtml.pf-native-mobi
 <script src="auth.js?v=2" defer></script>
 <script src="ai.js?v=15" defer></script>
 <script src="app-polish.js?v=10"></script>
-<script src="live-fx.js?v=6"></script>
+<script src="live-fx.js?v=7"></script>
+<script src="feature-hub.js?v=1"></script>
 <script>
 (function(){
   var ua=navigator.userAgent||"";
@@ -154,6 +155,6 @@ function logout(){
 if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js");
 </script>
 <script>(function(){try{if(localStorage.getItem("virajFinanceLoggedIn")==="1"||sessionStorage.getItem("virajGoogleSession")==="1")document.getElementById("loginGate").style.display="none"}catch(e){}})();</script>
-<script>setTimeout(function(){if(window.virajFX&&typeof window.virajFX.decorate==="function")window.virajFX.decorate();},900);</script>
+<script>setTimeout(function(){if(window.virajFX&&typeof window.virajFX.decorate==="function")window.virajFX.decorate();if(window.pfTools&&window.__view==="dashboard"&&typeof window.pfTools.open!=="function"){}},900);</script>
 </body>
 </html>
