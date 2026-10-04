@@ -73,7 +73,9 @@
       .then(function(r){if(!r.ok)throw new Error("Google quote unavailable");return r.json();})
       .then(function(d){
         if(!d||!n(d.rate))throw new Error("No Google rate returned");
-        setLive(d.rate,d.date||today(),"Google Finance");
+        var live=n(d.rate);
+        if(live<100 || live>120) throw new Error("Invalid EUR/INR quote");
+        setLive(live,d.date||today(),"Google Finance");
         render();
       })
       .catch(function(){
@@ -449,7 +451,7 @@
       '<div class="virajFxGrid"><div><label>Euro</label><div class="virajFxInput"><span>€</span><input id="virajFxEur" type="number" step="0.01" value="100"></div></div><div><label>Indian Rupee</label><div class="virajFxInput"><span>₹</span><input id="virajFxInr" type="number" step="0.01" value="'+(100*state.rate).toFixed(2)+'"></div></div></div>'+
       '<div class="virajFxResultRow"><span>Conversion</span><strong class="virajFxResult">₹'+(100*state.rate).toFixed(0)+'</strong></div>'+
       '<div class="virajFxInverse"></div>'+
-      '<div class="fxHistoryHead"><div><div class="eyebrow">RATE HISTORY</div><h3>EUR → INR over time</h3><small>Historical ECB reference series · interactive</small></div><div class="fxRangeTabs">'+["1M","6M","YTD","1Y","5Y","MAX"].map(function(x){return '<button type="button" data-fx-range="'+x+'" class="'+(x===state.range?"active":"")+'">'+x+'</button>';}).join("")+'</div></div>'+
+      '<div class="fxHistoryHead"><div><div class="eyebrow">RATE HISTORY</div><h3>EUR → INR over time</h3><small>Historical ECB reference series · interactive</small></div><div class="fxRangeTabs">'+["1D","1W","1M","3M","6M","YTD","1Y","5Y","MAX"].map(function(x){return '<button type="button" data-fx-range="'+x+'" class="'+(x===state.range?"active":"")+'">'+x+'</button>';}).join("")+'</div></div>'+
       '<div class="virajFxChartWrap"><div class="virajFxChart"></div><div class="fxTooltip"></div></div>'+
       '<div class="fxStats"><div><span>Start</span><strong class="fxStatStart">—</strong></div><div><span>High</span><strong class="fxStatHigh">—</strong></div><div><span>Low</span><strong class="fxStatLow">—</strong></div><div><span>Change</span><strong class="fxStatChange">—</strong></div></div>'+
       '<p class="hint">Google Finance supplies the live quote. The historical graph uses the European Central Bank reference series because Google does not provide a supported public historical-finance API. Rates are indicative and may differ from your bank/remittance rate.</p>';
