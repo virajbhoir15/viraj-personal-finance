@@ -156,5 +156,32 @@ if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js");
 </script>
 <script>(function(){try{if(localStorage.getItem("virajFinanceLoggedIn")==="1"||sessionStorage.getItem("virajGoogleSession")==="1")document.getElementById("loginGate").style.display="none"}catch(e){}})();</script>
 <script src="fx-final.js?v=1"></script>\n<script>setTimeout(function(){if(window.virajFX&&typeof window.virajFX.decorate==="function")window.virajFX.decorate();if(window.pfTools&&window.__view==="dashboard"&&typeof window.pfTools.open!=="function"){}},900);</script>
-</body>
+<!-- FX FINAL GUARANTEE -->
+<script>
+(function(){
+ function ensureFX(){
+  if(window.__view!=="dashboard") return;
+  if(window.virajFX&&typeof window.virajFX.decorate==="function") window.virajFX.decorate();
+  if(document.getElementById("virajFxCard")||document.getElementById("virajFxFinal")) return;
+  var p=document.getElementById("pfContent"); if(!p) return;
+  var rate=Number(localStorage.getItem("virajGoogleFxRate")||108.845); if(!isFinite(rate)||rate<80||rate>150) rate=108.845;
+  var c=document.createElement("section"); c.id="virajFxFinal"; c.className="panel";
+  c.innerHTML='<div class="panelHead"><div><div class="eyebrow">LIVE FOREIGN EXCHANGE</div><h2>EUR / INR Conversion</h2></div><button class="uxSecondary" id="fxFinalRefresh">Refresh</button></div>'+
+  '<div style="background:linear-gradient(135deg,#eef4ff,#f7f0ff);border:1px solid #dfe6f7;border-radius:14px;padding:14px;margin-bottom:12px"><div style="font-size:22px;font-weight:950" id="fxFinalRate">€1 = ₹'+rate.toFixed(4)+'</div><div style="font-size:10px;color:#697386;margin-top:3px">Google Finance · live quote</div></div>'+
+  '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><div><label>Euro (€)</label><input id="fxFinalE" type="number" step=".01" value="100"></div><div><label>Indian Rupee (₹)</label><input id="fxFinalI" type="number" step=".01" value="'+(100*rate).toFixed(2)+'"></div></div>'+
+  '<div style="display:flex;justify-content:space-between;border-top:1px solid #e7eaf0;margin-top:12px;padding-top:12px"><span>Conversion</span><b id="fxFinalR">₹'+(100*rate).toFixed(2)+'</b></div>'+
+  '<div style="font-size:10px;color:#7b8494;margin-top:5px">₹1 = €'+(1/rate).toFixed(6)+'</div>'+
+  '<div style="margin-top:15px;border-top:1px solid #e7eaf0;padding-top:12px"><div class="eyebrow">RATE HISTORY</div><div style="font-size:14px;font-weight:850;margin:3px 0 8px">EUR → INR over time</div><div id="fxFinalHistory" style="height:180px;border:1px solid #e6eaf2;border-radius:10px;display:grid;place-items:center;color:#8992a1;font-size:11px">Loading historical rates…</div></div>';
+  var a=p.querySelector(".uxMerchantPanel")||p.querySelector(".dashboardGrid")||p.firstChild; if(a)p.insertBefore(c,a);else p.appendChild(c);
+  var e=c.querySelector("#fxFinalE"),i=c.querySelector("#fxFinalI");
+  function conv(){i.value=(Number(e.value||0)*rate).toFixed(2);c.querySelector("#fxFinalR").textContent="₹"+i.value}
+  e.oninput=conv;i.oninput=function(){e.value=(Number(i.value||0)/rate).toFixed(2);c.querySelector("#fxFinalR").textContent="₹"+Number(i.value||0).toFixed(2)};
+  function refresh(){fetch("https://viraj-finance-ai.virajbhoir-ie.workers.dev/fx/google?pair=EUR-INR",{cache:"no-store"}).then(function(x){return x.json()}).then(function(x){if(Number(x.rate)>80&&Number(x.rate)<150){rate=Number(x.rate);localStorage.setItem("virajGoogleFxRate",rate);c.querySelector("#fxFinalRate").textContent="€1 = ₹"+rate.toFixed(4);conv()}}).catch(function(){})}
+  c.querySelector("#fxFinalRefresh").onclick=refresh; refresh();
+  fetch("https://api.frankfurter.dev/v2/providers/ecb/rates?from="+new Date(new Date().setFullYear(new Date().getFullYear()-1)).toISOString().slice(0,10)+"&to="+new Date().toISOString().slice(0,10)+"&quotes=INR",{cache:"no-store"}).then(function(x){return x.json()}).then(function(rows){var pts=(rows||[]).filter(function(x){return x&&x.rate>0});if(!pts.length)throw 0;var vals=pts.map(function(x){return Number(x.rate)}),mn=Math.min.apply(null,vals),mx=Math.max.apply(null,vals),w=700,h=170,pad=12,sp=Math.max(mx-mn,.001),path=pts.map(function(x,j){var X=pad+j/(pts.length-1||1)*(w-pad*2),Y=pad+(1-(x.rate-mn)/sp)*(h-pad*2);return(j?"L":"M")+X.toFixed(1)+" "+Y.toFixed(1)}).join(" ");c.querySelector("#fxFinalHistory").innerHTML='<svg viewBox="0 0 '+w+' '+h+'" style="width:100%;height:100%"><path d="'+path+'" fill="none" stroke="#3157d5" stroke-width="3"/></svg>'}).catch(function(){c.querySelector("#fxFinalHistory").textContent="Historical rates temporarily unavailable"});
+ }
+ setTimeout(ensureFX,700);setTimeout(ensureFX,1800);setTimeout(ensureFX,3500);
+ window.addEventListener("pageshow",function(){setTimeout(ensureFX,500)});
+})();
+</script></body>
 </html>
