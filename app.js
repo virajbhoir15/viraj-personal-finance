@@ -269,6 +269,7 @@ function cardModal(){
 function recurringModal(){
  modal("Add recurring payment",'<div class="formGrid"><label>Name<input id="rName"></label><label>Amount<input id="rAmt" type="number"></label><label>Currency<select id="rCur"><option>EUR</option><option>INR</option></select></label><label>Day<input id="rDay" type="number" min="1" max="28" value="1"></label><label>Category<input id="rCat"></label></div>',function(){var n=$("rName").value.trim();if(!n)return alert("Enter a name.");data.recurring.push({id:uid(),name:n,amount:N($("rAmt").value),currency:$("rCur").value,day:N($("rDay").value)||1,category:$("rCat").value.trim()||"Other"});save("Recurring saved");show("planning")});
 }
+function addUpcomingMonth(){var ks=months().slice().sort(),last=ks[ks.length-1]||curMonth(),d=new Date(last+"-01T00:00:00");d.setMonth(d.getMonth()+1);var k=d.toISOString().slice(0,7);if(data.months[k]){show("budget");return}var prev=data.months[last]||{};data.months[k]={income:0,budget:Object.assign({},prev.budget||{}),actual:{}};window.__budgetMonth=k;save("Upcoming "+mlabel(k)+" added");show("budget")}
 function addCategory(){var n=prompt("Category name");if(!n)return;data.months[curMonth()].budget[n.trim()]=0;save("Category added");show("budget")}
 function exportJSON(){var a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:"application/json"}));a.download="viraj-finance-backup.json";a.click()}
 function importJSON(f){if(!f)return;var r=new FileReader();r.onload=function(){try{var o=JSON.parse(r.result);if(!o.months)throw Error();data=o;save("Backup imported");show("dashboard")}catch(e){alert("Invalid finance backup.")}};r.readAsText(f)}
@@ -287,7 +288,7 @@ window.show=show;
 document.addEventListener("click",function(e){
  var nav=e.target.closest("[data-nav]");if(nav){e.preventDefault();show(nav.dataset.nav);return}
  var b=e.target.closest("[data-action]");if(b){var a=b.dataset.action;
-  if(a==="addTx")txModal();if(a==="addIncome")txModal(null,"income");if(a==="addAccount")accountModal();if(a==="addGoal")goalModal();if(a==="editLoan")loanModal();if(a==="editCard")cardModal();if(a==="addRecurring")recurringModal();if(a==="addCategory")addCategory();
+  if(a==="addTx")txModal();if(a==="addIncome")txModal(null,"income");if(a==="addAccount")accountModal();if(a==="addGoal")goalModal();if(a==="editLoan")loanModal();if(a==="editCard")cardModal();if(a==="addRecurring")recurringModal();if(a==="addCategory")addCategory();if(a==="addMonth")addUpcomingMonth();
   if(a==="saveBudget"){var k=window.__budgetMonth||curMonth();document.querySelectorAll("[data-budget]").forEach(function(i){data.months[k].budget[i.dataset.budget]=N(i.value)});save("Budget saved");show("budget")}
   if(a==="snapshot")snapshot();if(a==="export")exportJSON();if(a==="reset")resetData();
   if(a==="saveClient"){localStorage.setItem("googleClientId",($("clientId").value||"").trim());toast("Client ID saved")}
