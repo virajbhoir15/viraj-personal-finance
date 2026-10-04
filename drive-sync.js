@@ -254,6 +254,7 @@
     }
     state.started = true;
     state.dirty = localStorage.getItem("virajDriveDirty") === "1";
+    state.remoteModified = localStorage.getItem("virajDriveLastRemoteModified") || "";
     ensureStatusUI();
     var connected = localStorage.getItem("virajDriveConnected") === "1";
     if (!connected && !interactive) {
@@ -262,15 +263,18 @@
     }
     var result;
     try {
-      if (!interactive && !state.dirty) {
-        var t = await token(false), file = await findFile(t);
+      if (!state.dirty) {
+        var t = await token(!!interactive), file = await findFile(t);
         if (file) {
           status("Updating from Drive…", "syncing");
           var wrapper = await downloadFile(t, file);
           replaceInPlace(wrapper.data);
           state.fileId = file.id;
           state.remoteModified = file.modifiedTime || nowISO();
-          try { localStorage.setItem("virajDriveLastRemoteModified", state.remoteModified); } catch (e) {}
+          try {
+            localStorage.setItem("virajDriveLastRemoteModified", state.remoteModified);
+            localStorage.removeItem("virajDriveDirty");
+          } catch (e) {}
           status("Cloud synced", "live");
           result = "pulled";
         } else {
