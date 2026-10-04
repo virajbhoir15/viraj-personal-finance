@@ -50,7 +50,8 @@ function localLogin(){
     try{localStorage.setItem("virajFinanceLoggedIn","1");sessionStorage.setItem("virajLocalSession","1");}catch(e){}
     state.connected=true;hideGate();status("Signed in with your app password.",true);
     if(typeof toast==="function")toast("Signed in");
-    if(window.driveSync&&typeof window.driveSync.start==="function")window.driveSync.start(false);
+    if(window.driveSync&&typeof window.driveSync.connect==="function")window.driveSync.connect().catch(function(){});
+    else if(window.driveSync&&typeof window.driveSync.start==="function")window.driveSync.start(false);
   });
 }
 function createLocalCredential(){
