@@ -178,7 +178,7 @@
 
   function plansView() {
     var d=data(),goals=d.goals||[],em=goals.find(function(g){return /emergency/i.test(g.name)}),home=goals.find(function(g){return /mumbai/i.test(g.name)}),loan=loanSummary();
-    var goalsHtml=goals.map(function(g){var p=g.target?Math.min(100,n(g.current)/n(g.target)*100):0;return '<div class="uxPlanCard"><h3>'+esc(g.name)+'</h3><div class="big">'+(g.currency==="INR"?inr(g.current):eur(g.current))+' <span class="uxMuted">/ '+(g.currency==="INR"?inr(g.target):eur(g.target))+'</span></div><div class="uxProgress"><i style="width:'+p+'%"></i></div><div class="uxMuted">'+p.toFixed(0)+'% funded · target '+esc(g.targetDate||"no date")+'</div><button class="uxSecondary" data-ux-goal-add="'+esc(g.id)+'">+ Add contribution</button></div>';}).join("");
+    var goalsHtml=goals.map(function(g){var p=g.target?Math.min(100,n(g.current)/n(g.target)*100):0;return '<div class="uxPlanCard"><h3>'+esc(g.name)+'</h3><div class="big">'+(g.currency==="INR"?inr(g.current):eur(g.current))+' <span class="uxMuted">/ '+(g.currency==="INR"?inr(g.target):eur(g.target))+'</span></div><div class="uxProgress"><i style="width:'+p+'%"></i></div><div class="uxMuted">'+p.toFixed(0)+'% funded · target '+esc(g.targetDate||"no date")+'</div><button class="uxSecondary" data-ux-goal-add="'+esc(g.id)+'">+ Add contribution</button> <button class="rowBtn" data-ux-goal-edit="'+esc(g.id)+'">Edit</button> <button class="rowBtn dangerBtn" data-ux-goal-del="'+esc(g.id)+'">Delete</button></div>';}).join("");
     var rec=(d.recurring||[]).map(function(r){return '<div class="uxInline" style="padding:10px 0;border-bottom:1px solid #e7eaf0"><span>'+esc(r.name)+' <small class="uxMuted">· day '+n(r.day)+'</small></span><span><b>'+(r.currency==="INR"?inr(r.amount):eur(r.amount))+'</b> <button class="rowBtn dangerBtn" data-ux-rec-del="'+esc(r.id)+'">Delete</button></span></div>';}).join("")||'<div class="uxMuted">No recurring payments saved.</div>';
     el("pfContent").innerHTML='<div class="heroRow"><div><div class="eyebrow">PLANS & MILESTONES</div><h2>Plans</h2><p>Goals, debt and recurring commitments without cluttering everyday tracking.</p></div></div>'+
       '<div class="uxPlanGrid">'+
@@ -202,6 +202,24 @@
     body+='<div class="uxField"><label>Goal name</label><input id="uxNewGoalName"></div><div class="uxGrid2"><div class="uxField"><label>Target</label><input id="uxNewGoalTarget" type="number"></div><div class="uxField"><label>Currency</label><select id="uxNewGoalCur"><option>EUR</option><option>INR</option></select></div></div><div class="uxGrid2"><div class="uxField"><label>Current</label><input id="uxNewGoalCurrent" type="number" value="0"></div><div class="uxField"><label>Target date</label><input id="uxNewGoalDate" type="date"></div></div><button class="uxSave" id="uxNewGoalSave">Save goal</button>';
     var b2=openOverlay("uxNewGoalOverlay",body);
     el("uxNewGoalSave").onclick=function(){var name=el("uxNewGoalName").value.trim();if(!name)return alert("Enter a goal name.");d.goals=d.goals||[];d.goals.push({id:"goal-"+Date.now().toString(36),name:name,target:n(el("uxNewGoalTarget").value),current:n(el("uxNewGoalCurrent").value),currency:el("uxNewGoalCur").value,monthlyContribution:0,targetDate:el("uxNewGoalDate").value});try{localStorage.setItem("virajFinance",JSON.stringify(d));if(window.driveSync)window.driveSync.markDirty();}catch(e){}b2.remove();if(window.toast)window.toast("Goal saved");showView("plans");};
+  }
+
+
+  function openGoalEditor(id) {
+    var d=data(),g=(d.goals||[]).find(function(x){return x.id===id;});
+    if(!g)return;
+    var body='<div class="uxSheetHead"><h2>Edit goal</h2><button class="uxClose" data-ux-close>×</button></div>'+
+      '<div class="uxField"><label>Goal name</label><input id="uxEditGoalName" value="'+esc(g.name)+'"></div>'+
+      '<div class="uxGrid2"><div class="uxField"><label>Target</label><input id="uxEditGoalTarget" type="number" value="'+n(g.target)+'"></div><div class="uxField"><label>Currency</label><select id="uxEditGoalCur"><option '+(g.currency==="EUR"?"selected":"")+'>EUR</option><option '+(g.currency==="INR"?"selected":"")+'>INR</option></select></div></div>'+
+      '<div class="uxGrid2"><div class="uxField"><label>Current</label><input id="uxEditGoalCurrent" type="number" value="'+n(g.current)+'"></div><div class="uxField"><label>Target date</label><input id="uxEditGoalDate" type="date" value="'+esc(g.targetDate||"")+'"></div></div>'+
+      '<button class="uxSave" id="uxEditGoalSave">Save goal</button>';
+    var b=openOverlay("uxEditGoalOverlay",body);
+    el("uxEditGoalSave").onclick=function(){
+      var name=el("uxEditGoalName").value.trim();if(!name)return alert("Enter a goal name.");
+      Object.assign(g,{name:name,target:n(el("uxEditGoalTarget").value),current:n(el("uxEditGoalCurrent").value),currency:el("uxEditGoalCur").value,targetDate:el("uxEditGoalDate").value});
+      try{localStorage.setItem("virajFinance",JSON.stringify(d));if(window.driveSync)window.driveSync.markDirty();}catch(e){}
+      b.remove();if(window.toast)window.toast("Goal updated");showView("plans");
+    };
   }
 
   function recurringSheet() {
@@ -255,6 +273,16 @@
   function decorateBudget() {
     var hero=document.querySelector("#pfContent .heroRow .actions");
     if(hero&&!hero.querySelector("[data-ux-add-type]"))hero.insertAdjacentHTML("afterbegin",'<button data-ux-add-type="expense">+ Expense</button>');
+    document.querySelectorAll("#pfContent table tbody tr").forEach(function(row){
+      if(row.querySelector("[data-ux-del-category]"))return;
+      var name=row.cells[0]&&row.cells[0].childNodes[0]&&row.cells[0].childNodes[0].textContent?row.cells[0].childNodes[0].textContent.trim():row.cells[0]&&row.cells[0].textContent.trim();
+      if(!name)return;
+      var mk=window.__budgetMonth||((window.data&&Object.keys(window.data.months||{}).sort().slice(-1)[0])||"");
+      var actual=Number(window.data&&window.data.months&&window.data.months[mk]&&window.data.months[mk].actual&&window.data.months[mk].actual[name]||0);
+      var btn=document.createElement("button");btn.className="rowBtn dangerBtn";btn.textContent="Remove";btn.dataset.uxDelCategory=name;btn.dataset.uxDelCategoryMonth=mk;btn.title=actual?"Recorded spending exists":"Remove this category";
+      if(actual>0)btn.disabled=true;
+      row.cells[0].appendChild(btn);
+    });
   }
 
   function decorateSettings() {
@@ -283,11 +311,17 @@
     if(da){e.preventDefault();e.stopImmediatePropagation();deleteAccount(da.dataset.uxDeleteAccount);return;}
     if(e.target.closest("[data-ux-add-account]")){e.preventDefault();e.stopImmediatePropagation();openAccountSheet();return;}
     if(e.target.closest("[data-ux-clear-search]")){window.__moneySearch="";moneyView();return;}
+    var ge=e.target.closest("[data-ux-goal-edit]");
+    if(ge){e.preventDefault();e.stopImmediatePropagation();openGoalEditor(ge.dataset.uxGoalEdit);return;}
+    var gd=e.target.closest("[data-ux-goal-del]");
+    if(gd){e.preventDefault();e.stopImmediatePropagation();var dg=data(),gid=gd.dataset.uxGoalDel,used=(dg.transactions||[]).some(function(t){return t.goalId===gid;});if(used){alert("This goal has contribution history. Delete those contributions first to keep the ledger consistent.");return;}if(confirm("Delete this goal?")){dg.goals=(dg.goals||[]).filter(function(g){return g.id!==gid;});localStorage.setItem("virajFinance",JSON.stringify(dg));if(window.driveSync)window.driveSync.markDirty();if(window.toast)window.toast("Goal deleted");showView("plans");}return;}
     var gg=e.target.closest("[data-ux-goal-add]");
     if(gg&&gg.dataset.uxGoalAdd){e.preventDefault();e.stopImmediatePropagation();openGoalSheet(gg.dataset.uxGoalAdd);return;}
     if(e.target.closest("[data-ux-goal-new]")){e.preventDefault();e.stopImmediatePropagation();openGoalSheet();return;}
     var rg=e.target.closest("[data-ux-rec-add]");
     if(rg){e.preventDefault();e.stopImmediatePropagation();recurringSheet();return;}
+    var dc=e.target.closest("[data-ux-del-category]");
+    if(dc){e.preventDefault();e.stopImmediatePropagation();var dd=data(),mk=dc.dataset.uxDelCategoryMonth,cat=dc.dataset.uxDelCategory,m=dd.months&&dd.months[mk];if(!m)return;if(Number(m.actual&&m.actual[cat]||0)>0){alert("This category has recorded spending and cannot be removed.");return;}if(confirm("Remove "+cat+" from this month?")){if(m.budget)delete m.budget[cat];localStorage.setItem("virajFinance",JSON.stringify(dd));if(window.driveSync)window.driveSync.markDirty();if(window.toast)window.toast("Budget category removed");showView("budget");}return;}
     var rd=e.target.closest("[data-ux-rec-del]");
     if(rd){e.preventDefault();e.stopImmediatePropagation();var d=data();if(confirm("Delete recurring payment?")){d.recurring=(d.recurring||[]).filter(function(x){return x.id!==rd.dataset.uxRecDel;});localStorage.setItem("virajFinance",JSON.stringify(d));if(window.driveSync)window.driveSync.markDirty();plansView();}}
   },true);
