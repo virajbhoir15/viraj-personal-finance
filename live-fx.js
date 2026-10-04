@@ -4,7 +4,7 @@
 
   var GOOGLE_PROXY="https://viraj-finance-ai.virajbhoir-ie.workers.dev/fx/google";
   var HISTORY_API="https://api.frankfurter.dev/v2/providers/ecb/rates";
-  var GOOGLE_FALLBACK=108.7468;
+  var GOOGLE_FALLBACK=108.8450;
   var cachedRate=Number(localStorage.getItem("virajGoogleFxRate")||0);
   if(!isFinite(cachedRate)||cachedRate<100||cachedRate>120)cachedRate=GOOGLE_FALLBACK;
   var state={
@@ -489,6 +489,7 @@
   var oldShow=window.show;
   window.show=function(id){var r=oldShow?oldShow.apply(this,arguments):null;setTimeout(decorate,70);return r;};
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",function(){setTimeout(decorate,160);setInterval(fetchGoogleRate,5*60*1000);});
-  else {setTimeout(decorate,160);setInterval(fetchGoogleRate,5*60*1000);}
-  window.virajFX={state:state,refresh:function(){fetchGoogleRate();fetchHistory(state.range,true);}};
+  else {setTimeout(decorate,160);setTimeout(decorate,500);setTimeout(decorate,1200);setInterval(fetchGoogleRate,5*60*1000);}
+  window.addEventListener("pageshow",function(){setTimeout(decorate,300);});
+  window.virajFX={state:state,refresh:function(){fetchGoogleRate();fetchHistory(state.range,true);},decorate:decorate};
 })();
